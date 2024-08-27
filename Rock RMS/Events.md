@@ -1,18 +1,5 @@
 ## Rock Events
 
-Advanced Events - 
-
-- 93288 Original ticket number for ref
-- Staging and prod
-- Each campus will have its own registration template 
-- Fees are used - Fees are the single select option for the date and time of the show
-- Fee term is always plural
-- The placement group is on the linkage
-- placement group can only be used with one group per link
-- For replications, we may or may not hide fees or update fees (see Justin or use best judgement)
-
-Rock events Ticket close out -
-
 ## NOTE: NPMI for Public events / Rock.North for internal events
 
 Hi Casey, 
@@ -42,3 +29,29 @@ Events - 
     4. Login Required for staff events
 4. Text expander codes for events in Text Expander
 IN THE EVENT FROM NAME IS CHANGED IT IS DONE IN TWO PLACES
+
+------
+
+Staff culture has a specific theme
+-------------------------------------
+- https://rock.northpointministries.net/Registration/building-resilience-fall-2024?theme=StaffCulture
+
+Waitlist events
+-------------------------------------
+- Need to have the questions visable
+
+How to clean up staff dups data
+-------------------------------------
+Merge the staff member
+Clear out of the DB login thats not church account
+
+Advanced Events
+-------------------------------------
+- 93288 Original ticket number for ref
+- Staging and prod
+- Each campus will have its own registration template 
+- Fees are used - Fees are the single select option for the date and time of the show
+- Fee term is always plural
+- The placement group is on the linkage
+- placement group can only be used with one group per link
+- For replications, we may or may not hide fees or update fees (see Justin or use best judgement)
