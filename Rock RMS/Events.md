@@ -15,11 +15,17 @@ Third, the link to view your registrations - https://rock.northpointministries
 Thanks for partnering with us on this event!
 
 Events
+-----
 - Form Builder Matrix for yes or no on what we can do in rock events
 - Rock event Environment is for only RSVP tool only - Build in Test for CYA’s
-- Ruth Version - Create a rock event
-- Leadership track - Create a rock event is “ours” — Dated
-Events - 
+
+------
+
+Staff culture has a specific theme
+-------------------------------------
+- https://rock.northpointministries.net/Registration/building-resilience-fall-2024?theme=StaffCulture
+
+**Ruth Version - Create a rock event**
 1. Rock registration tab
 2. Clone base template
 3. Fill It out and put it in a proper folder 
@@ -29,12 +35,6 @@ Events - 
     4. Login Required for staff events
 4. Text expander codes for events in Text Expander
 IN THE EVENT FROM NAME IS CHANGED IT IS DONE IN TWO PLACES
-
-------
-
-Staff culture has a specific theme
--------------------------------------
-- https://rock.northpointministries.net/Registration/building-resilience-fall-2024?theme=StaffCulture
 
 Waitlist events
 -------------------------------------
