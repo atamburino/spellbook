@@ -83,4 +83,13 @@ In CSS, universal selectors are used to target all elements within a document. H
     ```
 - This targets and styles the first line of a paragraph.
 
+## 9. Atomizing (`.hidden`)
+- **Example:**
+    ```css
+    hidden {
+      display: none;
+    }
+    ```
+- We can create classes that we can leverage as conditonal on state.
+
 These selectors can be combined in various ways to create more specific and powerful styles.
