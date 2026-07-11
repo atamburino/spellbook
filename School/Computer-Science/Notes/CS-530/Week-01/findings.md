@@ -8,6 +8,7 @@ This page is both the index and the review sheet. Create a separate file in `fin
 | --- | --- | ---: | --- |
 | AI, machine learning, and deep learning | Core relationship for the activity |  |  |
 | Traditional ML vs. deep learning | Explains model choice and tradeoffs |  |  |
+| [Making a UI model](findings/making-a-ui-model.md) | Connects the concepts to a realistic enterprise system |  |  |
 | GitHub Copilot as a learning tool | Required evaluation in the report |  |  |
 
 ## Explain it simply
