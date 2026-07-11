@@ -9,7 +9,7 @@ subtitle: Evaluating GitHub Copilot as a Research Tool
 
 ## The Relationship Between Machine Learning and Deep Learning
 
-When I considered how I was using the term *model* before this assignment, I had limited my use of that term primarily to major generative artificial intelligence (AI) products such as Gemini, Claude, and ChatGPT. My conversation with GitHub Copilot and the readings associated with this assignment expanded my previous definition. They helped me view a model not just as a specific AI-based product, but as the chosen methodology for solving a particular problem. That shift has provided me with a greater overall understanding of both machine learning and deep learning methodologies, as well as a better way to assess Copilot as a research tool.
+When I considered how I was using the term model before this assignment, I had limited my use of that term primarily to major generative artificial intelligence (AI) products such as Gemini, Claude, and ChatGPT. My conversation with GitHub Copilot and the readings associated with this assignment expanded my previous definition. They helped me view a model not just as a specific AI-based product, but as the chosen methodology for solving a particular problem. That shift has provided me with a greater overall understanding of both machine learning and deep learning methodologies, as well as a better way to assess Copilot as a research tool.
 
 Machine learning is a large category of AI in which systems are trained to recognize patterns in data to generate predictions, classifications, or decisions. Deep learning is a subset of machine learning that uses neural networks with multiple layers (zyBooks, 2026, Section 1.1).
 
@@ -45,4 +45,4 @@ This assignment helped me realize that model families exist for many reasons, in
 
 ## References
 
-zyBooks. (2026). *CS 530: AI principles and applications* (Ch. 1: Machine learning and deep learning). zyBooks, a Wiley brand. [https://learn.zybooks.com/zybook/CS-530-10101.202657-1](https://learn.zybooks.com/zybook/CS-530-10101.202657-1)
+zyBooks. (2026). CS 530: AI principles and applications (Ch. 1: Machine learning and deep learning). zyBooks, a Wiley brand. [https://learn.zybooks.com/zybook/CS-530-10101.202657-1](https://learn.zybooks.com/zybook/CS-530-10101.202657-1)
