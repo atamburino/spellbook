@@ -4,13 +4,13 @@ Course shell: [CS-530-10101-M01 AI Princip and Applications 2026](https://learn.
 
 ## Weekly Notes
 
-- [Week 01: Module One Activity](../Notes/CS-530/week-01-module-one-activity.md)
+- [Week 01: Machine Learning and Deep Learning](../Notes/CS-530/Week-01/README.md)
 
 ## Assignments
 
 | Module | Assignment | Deliverables | Status | Link |
 | --- | --- | --- | --- | --- |
-| 1 | Module One Activity | JSON chat log and 2-3 page Word report | Planning | [Week 01 note](../Notes/CS-530/week-01-module-one-activity.md) |
+| 1 | Module One Activity | JSON chat log and 2-3 page Word report | In progress | [Week 01 workspace](../Notes/CS-530/Week-01/README.md) |
 
 ## Course Themes
 

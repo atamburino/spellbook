@@ -16,6 +16,19 @@ This section is for class notes, assignment patterns, and deterministic document
 3. Run the journal builder.
 4. Submit the generated `.docx`.
 
+## Weekly Learning Workflow
+
+Keep each week's learning and deliverable together. Generate the workspace, work from its `README.md`, and use `findings.md` as the only index you need to maintain.
+
+```powershell
+python School\Computer-Science\scripts\new_week.py `
+  --course CS-530 `
+  --week 2 `
+  --title "Intelligent Agents"
+```
+
+The workflow is intentionally small: preview, pick the few ideas that matter, explain them using plain English plus a familiar analogy, retrieve them from memory, then write the assignment. Reading every page is not the default goal; being able to explain and apply the week's objectives is.
+
 ```powershell
 python School\Computer-Science\scripts\new_journal.py `
   --assignment "Module Five Activity" `

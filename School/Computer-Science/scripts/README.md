@@ -2,6 +2,26 @@
 
 These scripts generate deterministic school documents from Markdown drafts.
 
+## Create A Weekly Workspace
+
+```powershell
+python School\Computer-Science\scripts\new_week.py `
+  --course CS-530 `
+  --week 2 `
+  --title "Intelligent Agents" `
+  --assignment "Module Two Journal"
+```
+
+This creates one self-contained folder under `Notes/<course>/Week-##/` with:
+
+- `README.md`: the week's objective, checklist, assignment, retrieval questions, and recap
+- `findings.md`: the topic index and confidence tracker
+- `findings/`: initially empty; add small notes only when a concept needs more room
+- `sources/`: PDFs and other source material
+- `journal.md`: the submission draft, ready for `build_journal.py`
+
+The command refuses to overwrite an existing week.
+
 ## Requirements
 
 - Python 3.10 or newer

@@ -1,17 +1,44 @@
-# Findings Index
+# CS-530 Week 01 Findings
 
-Use this page as the index for the week's notes. Each section below links to a smaller markdown file so the ideas are easier to review.
+This page is both the index and the review sheet. Create a separate file in `findings/` only when a concept outgrows a short explanation here.
 
-## Sections
-- [Overview](findings/01-overview.md)
-- [AI, Machine Learning, and Deep Learning Relationship](findings/02-ai-ml-dl-relationship.md)
-- [Traditional Machine Learning vs. Deep Learning](findings/03-ml-vs-dl.md)
-- [Game Analogies and Where They Help](findings/04-game-analogies.md)
-- [Assignment Notes](findings/05-assignment-notes.md)
-- [Key Takeaways for the Analysis Report](findings/06-key-takeaways.md)
-- [JSON-Friendly Chat Summary](findings/07-chat-summary.json)
+## Learning queue
 
-## How to use this folder
-- Add one prompt or response summary per section.
-- Keep each file focused on a single topic.
-- Use the index page as the main entry point for review.
+| Topic | Why it matters | Confidence (1–5) | Note |
+| --- | --- | ---: | --- |
+| AI, machine learning, and deep learning | Core relationship for the activity |  |  |
+| Traditional ML vs. deep learning | Explains model choice and tradeoffs |  |  |
+| GitHub Copilot as a learning tool | Required evaluation in the report |  |  |
+
+## Explain it simply
+
+### AI, machine learning, and deep learning
+
+- **Plain English:**
+- **WoW analogy:**
+- **Where the analogy breaks:**
+- **Software example:**
+- **From-memory explanation:**
+
+### Traditional ML vs. deep learning
+
+- **Plain English:**
+- **WoW analogy:**
+- **Where the analogy breaks:**
+- **Software example:**
+- **From-memory explanation:**
+
+### Copilot as a learning tool
+
+- **What it explained well:**
+- **What required verification:**
+- **How it affected my understanding:**
+- **Where it could encourage shallow learning:**
+
+## Connections
+
+How do these ideas relate to one another and to real software engineering?
+
+## Muddiest point
+
+What is the smallest unanswered question blocking a clear explanation?
