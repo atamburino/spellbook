@@ -1,18 +1,16 @@
 # Scripts
 
-These scripts generate deterministic school documents from Markdown drafts.
+These scripts support the weekly learning workspace.
 
-## Create A Weekly Workspace
+## Create a Weekly Workspace
 
-From the repository root, run the interactive shortcut:
+From the repository root, run:
 
 ```powershell
 .\newweek
 ```
 
-Press Enter to accept the default course and suggested next week. The shortcut automatically uses either the `py` launcher or `python`, depending on what is installed.
-
-To create a week without prompts, pass every value explicitly:
+Press Enter to accept the default course and suggested next week. To create a week without prompts, pass every value explicitly:
 
 ```powershell
 .\newweek `
@@ -22,47 +20,8 @@ To create a week without prompts, pass every value explicitly:
   --assignment "Module Two Journal"
 ```
 
-This creates one self-contained folder under `Notes/<course>/Week-##/` with:
+This creates one folder under `Notes/<course>/Week-##/` containing the weekly overview, findings index, expanded findings, sources, and a Markdown journal draft. The command refuses to overwrite an existing week.
 
-- `README.md`: the week's objective, checklist, assignment, retrieval questions, and recap
-- `findings.md`: the topic index and confidence tracker
-- `findings/`: initially empty; add small notes only when a concept needs more room
-- `sources/`: PDFs and other source material
-- `journal.md`: the submission draft, ready for `build_journal.py`
-
-The command refuses to overwrite an existing week.
-
-## Requirements
+## Requirement
 
 - Python 3.10 or newer
-- `python-docx`
-
-Install the dependency if your Python environment does not already have it:
-
-```powershell
-python -m pip install python-docx
-```
-
-## Create A Draft
-
-```powershell
-python School\Computer-Science\scripts\new_journal.py `
-  --assignment "Module Five Activity" `
-  --title "Semaphore Synchronization and Deadlock Prevention"
-```
-
-## Build A DOCX
-
-```powershell
-python School\Computer-Science\scripts\build_journal.py `
-  School\Computer-Science\Journals\drafts\example-journal.md
-```
-
-The builder intentionally matches the provided journal sample:
-
-- Letter page
-- 1-inch margins
-- Times New Roman 12 pt
-- Double spacing
-- Centered title block
-- Centered bold section headings

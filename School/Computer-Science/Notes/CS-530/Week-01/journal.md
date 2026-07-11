@@ -5,7 +5,6 @@ author: Andy Tamburino
 course: CS-530
 title: Machine Learning and Deep Learning
 subtitle: Evaluating GitHub Copilot as a Learning Tool
-output: ../../../Journals/generated/cs-530-week-01.docx
 ---
 
 Introduce the activity, the central question, and how Copilot was used as a research partner.

@@ -116,7 +116,6 @@ author: Andy Tamburino
 course: {course}
 title: Journal Title
 subtitle:
-output: ../../../Journals/generated/{course.lower()}-week-{week:02d}.docx
 ---
 
 Opening paragraph goes here.
