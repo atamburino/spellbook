@@ -4,8 +4,18 @@ These scripts generate deterministic school documents from Markdown drafts.
 
 ## Create A Weekly Workspace
 
+From the repository root, run the interactive shortcut:
+
 ```powershell
-python School\Computer-Science\scripts\new_week.py `
+.\newweek
+```
+
+Press Enter to accept the default course and suggested next week. The shortcut automatically uses either the `py` launcher or `python`, depending on what is installed.
+
+To create a week without prompts, pass every value explicitly:
+
+```powershell
+.\newweek `
   --course CS-530 `
   --week 2 `
   --title "Intelligent Agents" `
