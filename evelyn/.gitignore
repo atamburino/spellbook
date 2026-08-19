@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# Local-first data — this is the whole point: it lives on your machine,
+# never in the repo.
+data/*.db
+data/*.ics
+!data/.gitkeep
