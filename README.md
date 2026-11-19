@@ -1,25 +1,47 @@
-# Spellbook
+# 📖 Spellbook
 
-This repository now holds source files and tooling for my computer science master's work.
+A unified reference notebook — saved links, code snippets, school notes, and everything worth remembering.
 
-The general reference notebook lives in the GitHub Wiki:
+**Live site:** [atamburino.github.io/spellbook](https://atamburino.github.io/spellbook)
 
-- [Spellbook Wiki](https://github.com/atamburino/spellbook/wiki)
+## How it works
 
-## Repository Contents
+- A doc bot watches for things to save and opens PRs with structured markdown
+- When merged to `main`, GitHub Actions builds and deploys to GitHub Pages
+- Everything is markdown (MDX). Everything is searchable. Everything is in one place
 
-- [School/Computer-Science](School/Computer-Science/Home.md): class notes, assignment planning, journal templates, and deterministic document-generation scripts.
+## Structure
 
-## Why The Wiki Is Separate
+```
+notebook/
+├── docs/
+│   ├── index.mdx              ← Landing page
+│   ├── references/             ← Saved articles, tweets, code patterns
+│   │   ├── lua/
+│   │   ├── react/
+│   │   └── ...
+│   └── school/                 ← Master's program notes
+├── src/
+│   ├── components/
+│   │   └── Artifact/           ← Embed interactive HTML/JS in any page
+│   └── css/custom.css
+└── docusaurus.config.ts
+```
 
-GitHub Wikis are stored in a separate repository behind the scenes. Keeping reference notes in the wiki avoids duplicating the same notebook content in both places.
+## For the doc bot
 
-This repo should stay focused on:
+See [BOT_INSTRUCTIONS.md](BOT_INSTRUCTIONS.md) for the PR format, file template, and contribution rules.
 
-- reusable scripts
-- templates
-- source drafts
-- class planning notes
-- generated-work conventions
+## Local development
 
-Generated `.docx` files should stay out of git unless there is a specific reason to archive one.
+```bash
+cd notebook
+npm install
+npm start        # Dev server at localhost:3000
+npm run build    # Production build
+```
+
+## Other contents
+
+- [School/Computer-Science](School/Computer-Science/Home.md) — class notes (original format)
+- `newweek.py` / `newweek.cmd` — weekly workspace generators

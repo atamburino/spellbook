@@ -1,0 +1,72 @@
+---
+title: Example — Interactive Artifact
+sidebar_label: "✨ Interactive Artifact Demo"
+sidebar_position: 99
+tags: [demo, artifact, interactive]
+---
+
+# Interactive Artifacts
+
+You can embed interactive HTML/CSS/JS directly in any page using the `<Artifact>` component.
+
+import Artifact from '@site/src/components/Artifact';
+
+## Counter example
+
+<Artifact
+  title="Interactive counter"
+  height={200}
+  html={`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          margin: 0;
+          font-family: system-ui;
+          background: #18181b;
+          color: #e4e4e7;
+        }
+        button {
+          background: #6366f1;
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 8px;
+          font-size: 16px;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        button:hover { background: #4f46e5; }
+        .count { font-size: 48px; font-weight: bold; margin: 16px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="count" id="count">0</div>
+      <button onclick="document.getElementById('count').textContent = ++window.c">
+        Click me
+      </button>
+      <script>window.c = 0;</script>
+    </body>
+    </html>
+  `}
+/>
+
+## How to use
+
+In any `.mdx` file, import the `Artifact` component and pass your HTML as a template literal string to the `html` prop. Set `title` and `height` as needed.
+
+**Props:**
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `html` | string | — | Raw HTML/CSS/JS to render |
+| `height` | number | 400 | Iframe height in pixels |
+| `title` | string | "Interactive artifact" | Accessible label |
+
+The artifact renders in a sandboxed iframe — scripts can run but cannot access the parent page.

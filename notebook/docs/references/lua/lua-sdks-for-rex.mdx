@@ -1,0 +1,64 @@
+---
+title: "Generate any service's API as a Lua SDK for rex"
+sidebar_label: Lua SDKs for rex
+tags: [lua, rex, sdk-generation, cloudflare, planetscale]
+date: 2026-11-17
+custom_edit_url: null
+---
+
+# Generate any service's API as a Lua SDK for rex
+
+> **Source:** [Dillon Mulroy (@dillon_mulroy)](https://x.com/dillon_mulroy/status/2122781686077210795) · Nov 17, 2026
+>
+> **Saved via:** X reply by [@AndyTamburino](https://x.com/AndyTamburino/status/2122859057048392172), passed on by Chief and dr eggbot
+
+## The idea
+
+> what if you could have or generate every services api you love and use as a lua sdk ready for use in rex
+
+Take the APIs of services you already use and generate typed Lua SDKs for them, so they drop straight into rex scripts.
+
+## Code pattern
+
+The screenshot shows a `distilled` library loaded with a rex host, then generated `cloudflare.workers` and `planetscale` clients built against that host, each wrapped in a `rex.action` using `distilled.check(...)` with paginated `*_items(...):collect(100)` calls.
+
+```lua
+local distilled = require("distilled")
+local host = require("distilled.host.rex")()
+local account = os.getenv("CLOUDFLARE_ACCOUNT_ID")
+local org = os.getenv("PLANETSCALE_ORGANIZATION")
+
+local workers = require("cloudflare.workers").new({ host = host })
+local ps = require("planetscale").new({ host = host })
+
+rex.action({
+  name = "cf_workers",
+  title = "Cloudflare: list Workers",
+  run = function()
+    local out = {}
+    for i, s in ipairs(distilled.check(workers:list_scripts_items({ account_id = account }):collect(100))) do
+      out[i] = s.id
+    end
+    return out
+  end,
+})
+
+rex.action({
+  name = "ps_databases",
+  title = "PlanetScale: list databases",
+  run = function()
+    local out = {}
+    for i, db in ipairs(distilled.check(ps:list_databases_items({ organization = org }):collect(100))) do
+      out[i] = db.name
+    end
+    return out
+  end,
+})
+```
+
+## Key takeaways
+
+- One shared `host` object injected into every generated client
+- Credentials read from environment variables
+- List endpoints exposed as paginated iterators you `collect(n)` and unwrap with `check`
+- The post has no outside link — only the image. What rex and `distilled` are isn't explained

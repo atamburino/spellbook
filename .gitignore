@@ -1,0 +1,5 @@
+# notebook
+node_modules/
+build/
+.docusaurus/
+.cache-loader/
