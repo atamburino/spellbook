@@ -3,9 +3,7 @@
   "position": 3,
   "collapsed": false,
   "link": {
-    "type": "generated-index",
-    "title": "School Notes",
-    "description": "Master's in Computer Science — class notes, journals, and planning.",
-    "slug": "/school"
+    "type": "doc",
+    "id": "school/index"
   }
 }

@@ -3,9 +3,7 @@
   "position": 2,
   "collapsed": false,
   "link": {
-    "type": "generated-index",
-    "title": "Saved References",
-    "description": "Articles, tweets, code patterns, and tools — saved by the doc bot.",
-    "slug": "/references"
+    "type": "doc",
+    "id": "references/index"
   }
 }
