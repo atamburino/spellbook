@@ -1,0 +1,42 @@
+---
+title: "single-spa internals · v6.0.3 at a glance"
+sidebar_label: single-spa internals
+tags: [single-spa, microfrontends, routing, import-maps, flowchart]
+date: 2026-11-21
+custom_edit_url: null
+---
+
+# single-spa internals · v6.0.3 at a glance
+
+> **Source:** [single-spa v6.0.3 (`b619c26`)](https://github.com/single-spa/single-spa/commit/b619c26f0a39bbc8f175805a361a88a22fbd6d9b) · Sep 29, 2024
+>
+> **Saved via:** Andy, as a standalone Flux flowchart
+
+## The idea
+
+An offline flowchart of single-spa core v6.0.3: how routing is patched, how `reroute()` moves each app through its status, and how loading and DOM placement happen outside core. It is its own page, so citation links can open in a new tab and the chart can use the full screen on a phone.
+
+## The chart
+
+**[Open the single-spa internals flowchart](pathname:///flux/single-spa-internals.html)**
+
+75 nodes, 7 sections. Source JSON (regenerates the HTML): [single-spa-internals.json](pathname:///flux/single-spa-internals.json).
+
+## What the chart covers
+
+- **Router patching** — `start()` calls `patchHistoryApi()`: native `hashchange` / `popstate` listeners, captured app listeners, wrapped `pushState` / `replaceState`, and a synthetic popstate into `reroute()`
+- **Reroute loop** — who calls `reroute()`, the pre-start load-only path, the four activity buckets, then unmount and unload before mount
+- **App status machine** — `NOT_LOADED` through `MOUNTED`, plus `LOAD_ERROR`, `SKIP_BECAUSE_BROKEN`, and unload. Cycles are drawn as ↺ notes
+- **Event sequence** — `before-app-change` / `before-no-app-change`, `before-routing-event`, `before-mount-routing-event`, first-mount, then `routing-event`
+- **Parcels** — `mountParcel` / `mountRootParcel`, the returned parcel object, and app-owned versus root unmount
+- **Import maps & loading** — core only calls `loadApp`; SystemJS, native `import()`, import-map-injector, overrides, and the deployer
+- **Layout / container placement** — `single-spa-application:<name>`, `domElementGetter` precedence, and single-spa-layout's route engine
+
+Some cards are marked **UNVERIFIED**. Those eleven notes are open questions from the research, drawn next to the step they affect, not confirmed behavior.
+
+## Key takeaways
+
+- One array of registered apps; status only moves inside `reroute()`
+- Nothing is patched until `start()`
+- Core never fetches a script, places an app in the DOM, or reads an import map
+- UNVERIFIED cards are open questions — hash navigations, hung lifecycles, event ordering, root parcels, and a few loader and layout details
