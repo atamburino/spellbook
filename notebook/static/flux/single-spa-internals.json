@@ -1,0 +1,1464 @@
+{
+  "title": "single-spa internals · v6.0.3 at a glance",
+  "layout": "tb",
+  "notes": "• Scope: single-spa core v6.0.3 (commit b619c26) and the ecosystem versions listed in single-spa-internals.md; every claim and citation comes from that research file. v7 beta is out of scope.\n• Sections are separate root branches (renderer requires each node in one section). Cross-section links are named in detail text, e.g. before-mount-routing-event appears in the loop, event and layout sections.\n• The status machine has cycles; the renderer requires a DAG, so return transitions are drawn as ↺ end nodes (retry, back to NOT_MOUNTED, back to NOT_LOADED) instead of back-edges.\n• The reroute loop shows the post-start() path in detail; canceled-navigation handling is summarized in the pre-events step. The sequence diagram’s par blocks are shown as two parallel branches joining at mount.\n• All 11 items in the research file’s “Unverified / open questions” appear as UNVERIFIED note cards beside the step they affect; inferences called out inline in the research (e.g. hung lifecycles) are among them.\n• Citations are rendered as safe links: http/https only, escaped, opening in a new tab with rel=noopener noreferrer. They are not fetched by the page.",
+  "nodes": [
+    {
+      "id": "core-model",
+      "type": "start",
+      "label": "single-spa core v6.0.3 · how it works",
+      "detail": "One array of registered apps, each with a status string. Whenever the URL might have changed, core calls reroute(): activity functions sort apps into unload / unmount / load / mount buckets, then promise chains move each status forward. Core never fetches a script, places apps in the DOM or reads an import map.",
+      "refs": [
+        {
+          "label": "apps.js#L27",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/applications/apps.js#L27"
+        },
+        {
+          "label": "reroute.js#L39-L85",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/reroute.js#L39-L85"
+        }
+      ]
+    },
+    {
+      "id": "router-start",
+      "type": "process",
+      "label": "start() → patchHistoryApi()",
+      "detail": "Nothing is patched until start(): it sets started = true, then calls patchHistoryApi(opts) and reroute(). patchHistoryApi throws if called twice. Before start(), popstate / hashchange listeners go straight to the native addEventListener and are not captured.",
+      "refs": [
+        {
+          "label": "start.js#L7-L13",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/start.js#L7-L13"
+        },
+        {
+          "label": "navigation-events.js#L134-L143",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/navigation-events.js#L134-L143"
+        }
+      ]
+    },
+    {
+      "id": "router-native",
+      "type": "process",
+      "label": "Own listeners first, natively",
+      "detail": "Saves the real history.replaceState as originalReplaceState, then natively adds hashchange and popstate → urlReroute, which is reroute([], arguments). urlRerouteOnly defaults to true.",
+      "refs": [
+        {
+          "label": "navigation-events.js#L134-L195",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/navigation-events.js#L134-L195"
+        },
+        {
+          "label": "Docs: start",
+          "url": "https://single-spa.js.org/docs/api/#start"
+        }
+      ]
+    },
+    {
+      "id": "router-capture",
+      "type": "process",
+      "label": "addEventListener patched: capture",
+      "detail": "Function listeners for hashchange / popstate go into capturedEventListeners and are not registered with the browser. Listener objects with handleEvent are not captured. removeEventListener filters the captured list and calls the original. ensureJQuerySupport routes jQuery on / off for these events the same way.",
+      "refs": [
+        {
+          "label": "navigation-events.js#L134-L195",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/navigation-events.js#L134-L195"
+        },
+        {
+          "label": "jquery-support.js#L5-L66",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/jquery-support.js#L5-L66"
+        }
+      ]
+    },
+    {
+      "id": "router-history",
+      "type": "process",
+      "label": "pushState / replaceState wrapped",
+      "detail": "patchedUpdateState records location.href before and after the real call. If !urlRerouteOnly or the URL changed, it dispatches a synthetic PopStateEvent tagged singleSpa = true and singleSpaTrigger. With the v6 default, a same-URL call produces no popstate and no reroute.",
+      "refs": [
+        {
+          "label": "Docs: PopStateEvent",
+          "url": "https://single-spa.js.org/docs/api/#popstateevent"
+        },
+        {
+          "label": "Issue #484 (urlRerouteOnly)",
+          "url": "https://github.com/single-spa/single-spa/issues/484"
+        }
+      ]
+    },
+    {
+      "id": "router-synthetic",
+      "type": "process",
+      "label": "Synthetic popstate → urlReroute → reroute()",
+      "detail": "The browser never fires popstate for pushState; single-spa does it on purpose so other apps’ routers notice the URL change. navigateToUrl uses the patched pushState for ordinary same-origin URLs; hash-only and different-host URLs set location instead.",
+      "refs": [
+        {
+          "label": "Comment, navigation-events.js#L96-L98",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/navigation-events.js#L96-L98"
+        },
+        {
+          "label": "navigateToUrl, navigation-events.js#L18-L62",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/navigation-events.js#L18-L62"
+        }
+      ]
+    },
+    {
+      "id": "router-replay",
+      "type": "process",
+      "label": "Captured listeners replayed later",
+      "detail": "Replayed per event type in try / catch; a throw is rethrown via setTimeout. Inside reroute they run after unmounts and unloads finish, before incoming apps finish mounting — not “after mount”. Silent navigations skip them.",
+      "refs": [
+        {
+          "label": "navigation-events.js#L64-L81",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/navigation-events.js#L64-L81"
+        },
+        {
+          "label": "reroute.js#L357-L367",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/reroute.js#L357-L367"
+        },
+        {
+          "label": "reroute.js#L262-L274",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/reroute.js#L262-L274"
+        }
+      ]
+    },
+    {
+      "id": "router-hash-unverified",
+      "type": "note",
+      "label": "UNVERIFIED · hash navigations",
+      "detail": "If a browser fires both popstate and hashchange for one hash change, single-spa calls reroute twice, the second queued or a no-op. Browser event behavior was not verified from a primary source."
+    },
+    {
+      "id": "loop-triggers",
+      "type": "process",
+      "label": "Who calls reroute()",
+      "detail": "registerApplication, start(), native popstate / hashchange plus the synthetic popstate (via urlReroute), triggerAppChange() — mainly for tests — and internally after an unload, a canceled navigation, or to drain the queue.",
+      "refs": [
+        {
+          "label": "apps.js#L150-L153",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/applications/apps.js#L150-L153"
+        },
+        {
+          "label": "start.js#L11",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/start.js#L11"
+        },
+        {
+          "label": "reroute.js#L34-L37",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/reroute.js#L34-L37"
+        },
+        {
+          "label": "Docs: triggerAppChange",
+          "url": "https://single-spa.js.org/docs/api/#triggerappchange"
+        }
+      ]
+    },
+    {
+      "id": "loop-started",
+      "type": "decision",
+      "label": "start() called yet?",
+      "detail": "URL bookkeeping happens on every call: oldUrl = currentUrl and newUrl = currentUrl = location.href."
+    },
+    {
+      "id": "loop-prestart",
+      "type": "end",
+      "label": "Pre-start: load only",
+      "detail": "appsToLoad only; toLoadPromise for each, in parallel. No lock and no single-spa:* events; captured listeners replay after loads. Apps load but never bootstrap, mount or unmount. Concurrent pre-start reroutes are made safe only by loadPromise deduplication.",
+      "refs": [
+        {
+          "label": "Docs: start",
+          "url": "https://single-spa.js.org/docs/api/#start"
+        },
+        {
+          "label": "Docs: calling singleSpa.start()",
+          "url": "https://single-spa.js.org/docs/configuration/#calling-singlespastart"
+        }
+      ]
+    },
+    {
+      "id": "loop-lock",
+      "type": "decision",
+      "label": "appChangeUnderway?",
+      "detail": "Module-level lock, taken only in the post-start() branch.",
+      "refs": [
+        {
+          "label": "reroute.js#L30-L32",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/reroute.js#L30-L32"
+        }
+      ]
+    },
+    {
+      "id": "loop-queue",
+      "type": "process",
+      "label": "Queue in peopleWaitingOnAppChange",
+      "detail": "Pushes {resolve, reject, eventArguments} and returns a pending promise. Rapid back-to-back navigations collapse into at most one extra pass against the current URL; intermediate URLs are never rendered. Each queued caller’s captured listeners still replay in order."
+    },
+    {
+      "id": "loop-buckets",
+      "type": "process",
+      "label": "getAppChanges(): four buckets",
+      "detail": "active = status ≠ SKIP_BECAUSE_BROKEN and activeWhen(window.location). Load: NOT_LOADED / LOADING_SOURCE_CODE, or LOAD_ERROR ≥ 200 ms later. Unload: inactive NOT_BOOTSTRAPPED / NOT_MOUNTED that unloadApplication queued. Mount: active NOT_BOOTSTRAPPED / NOT_MOUNTED. Unmount: inactive MOUNTED. Everything else is ignored.",
+      "refs": [
+        {
+          "label": "apps.js#L29-L72",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/applications/apps.js#L29-L72"
+        },
+        {
+          "label": "pathToActiveWhen, apps.js#L451-L466",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/applications/apps.js#L451-L466"
+        }
+      ]
+    },
+    {
+      "id": "loop-cancel",
+      "type": "process",
+      "label": "Pre-events + cancel check",
+      "detail": "before-app-change (or before-no-app-change) and before-routing-event fire synchronously; cancelNavigation promises are awaited. If any resolves truthy, the original replaceState restores oldUrl, the lock is released and a silent reroute runs: no events, no listener replay.",
+      "refs": [
+        {
+          "label": "cancelNavigation, reroute.js#L87-L107",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/reroute.js#L87-L107"
+        },
+        {
+          "label": "Docs: canceling navigation",
+          "url": "https://single-spa.js.org/docs/api/#canceling-navigation"
+        }
+      ]
+    },
+    {
+      "id": "loop-unmount",
+      "type": "process",
+      "label": "Unmount + unload, in parallel",
+      "detail": "appsToUnload → toUnloadPromise; appsToUnmount → toUnmountPromise then toUnloadPromise. Everything combines into unmountAllPromise; when it resolves, before-mount-routing-event fires.",
+      "refs": [
+        {
+          "label": "performAppChanges, reroute.js#L149-L311",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/reroute.js#L149-L311"
+        }
+      ]
+    },
+    {
+      "id": "loop-load",
+      "type": "process",
+      "label": "Load + bootstrap, concurrently",
+      "detail": "Loads start right away, concurrently with the unmounts: toLoadPromise then tryToBootstrapAndMount. Already-loaded apps in appsToMount go straight to tryToBootstrapAndMount."
+    },
+    {
+      "id": "loop-mount",
+      "type": "process",
+      "label": "Mount only after all unmounts",
+      "detail": "tryToBootstrapAndMount re-checks activeWhen, bootstraps, awaits unmountAllPromise, re-checks once more, then mounts. No app mounts until every outgoing app finished unmounting; mounts run in parallel with no ordering between apps.",
+      "refs": [
+        {
+          "label": "reroute.js#L443-L453",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/reroute.js#L443-L453"
+        },
+        {
+          "label": "Issue #524",
+          "url": "https://github.com/single-spa/single-spa/issues/524"
+        }
+      ]
+    },
+    {
+      "id": "loop-finish",
+      "type": "end",
+      "label": "finishUpAndReturn",
+      "detail": "Resolves queued callers with getMountedApps(), fires app-change (or no-app-change) then routing-event, releases the lock and drains the queue with one new reroute. Lifecycle failures are mostly swallowed into SKIP_BECAUSE_BROKEN, so routing events still fire."
+    },
+    {
+      "id": "loop-hung-unverified",
+      "type": "note",
+      "label": "UNVERIFIED · a hung lifecycle blocks routing",
+      "detail": "Inferred from reasonableTime plus the lock: with default dieOnTimeout = false, a mount promise that never settles leaves reroute pending and appChangeUnderway true, so later navigations only queue. Not reproduced.",
+      "refs": [
+        {
+          "label": "timeouts.js#L6-L34",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/applications/timeouts.js#L6-L34"
+        },
+        {
+          "label": "Docs: timeouts",
+          "url": "https://single-spa.js.org/docs/building-applications/#timeouts"
+        }
+      ]
+    },
+    {
+      "id": "status-not-loaded",
+      "type": "process",
+      "label": "NOT_LOADED",
+      "detail": "Status of every new app record ({status: NOT_LOADED, loadErrorTime: null, parcels: {}}).",
+      "refs": [
+        {
+          "label": "Status constants, app.helpers.js#L4-L15",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/applications/app.helpers.js#L4-L15"
+        },
+        {
+          "label": "Docs: getAppStatus",
+          "url": "https://single-spa.js.org/docs/api/#getappstatus"
+        }
+      ]
+    },
+    {
+      "id": "status-loading",
+      "type": "process",
+      "label": "LOADING_SOURCE_CODE",
+      "detail": "toLoadPromise calls app.loadApp(getProps(app)). An existing app.loadPromise is returned, so concurrent reroutes share one download.",
+      "refs": [
+        {
+          "label": "load.js#L24-L188",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/lifecycles/load.js#L24-L188"
+        }
+      ]
+    },
+    {
+      "id": "status-load-error",
+      "type": "process",
+      "label": "LOAD_ERROR",
+      "detail": "Loader promise rejected (typically a network error); loadErrorTime is stamped. Retried on any later reroute ≥ 200 ms later while still active — broader than the docs’ “navigate away and back”.",
+      "refs": [
+        {
+          "label": "apps.js#L35-L47",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/applications/apps.js#L35-L47"
+        }
+      ]
+    },
+    {
+      "id": "status-retry",
+      "type": "end",
+      "label": "↺ Retry → LOADING_SOURCE_CODE",
+      "detail": "Return transition. With SystemJS the failed module is cached; the docs recommend System.delete(System.resolve(err.appOrParcelName)) in an error handler.",
+      "refs": [
+        {
+          "label": "Docs: retry after LOAD_ERROR",
+          "url": "https://single-spa.js.org/docs/api/#handling-load_error-status-to-retry-module"
+        }
+      ]
+    },
+    {
+      "id": "status-not-bootstrapped",
+      "type": "process",
+      "label": "NOT_BOOTSTRAPPED",
+      "detail": "Valid exports: mount and unmount required, bootstrap checked only if present. Lifecycles are wrapped with flattenFnArray (arrays run strictly sequentially) and module timeouts merge over global ones.",
+      "refs": [
+        {
+          "label": "lifecycle.helpers.js#L15-L45",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/lifecycles/lifecycle.helpers.js#L15-L45"
+        }
+      ]
+    },
+    {
+      "id": "status-bootstrapping",
+      "type": "process",
+      "label": "BOOTSTRAPPING",
+      "detail": "Runs once per load, guarded by status.",
+      "refs": [
+        {
+          "label": "bootstrap.js#L13-L72",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/lifecycles/bootstrap.js#L13-L72"
+        }
+      ]
+    },
+    {
+      "id": "status-not-mounted",
+      "type": "process",
+      "label": "NOT_MOUNTED",
+      "detail": "Loaded and bootstrapped, not mounted."
+    },
+    {
+      "id": "status-mounting",
+      "type": "process",
+      "label": "MOUNTING",
+      "detail": "On mount failure the status is set back to MOUNTED and unmount is called to clean up a half-rendered DOM, then the app is marked broken.",
+      "refs": [
+        {
+          "label": "mount.js#L18-L91",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/lifecycles/mount.js#L18-L91"
+        }
+      ]
+    },
+    {
+      "id": "status-mounted",
+      "type": "process",
+      "label": "MOUNTED",
+      "detail": "getMountedApps() counts only exactly MOUNTED. UPDATING exists for parcels only."
+    },
+    {
+      "id": "status-unmounting",
+      "type": "process",
+      "label": "UNMOUNTING",
+      "detail": "Unmounts every child parcel first, then the app itself, even if a parcel failed.",
+      "refs": [
+        {
+          "label": "unmount.js#L13-L90",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/lifecycles/unmount.js#L13-L90"
+        }
+      ]
+    },
+    {
+      "id": "status-remount",
+      "type": "end",
+      "label": "↺ Back to NOT_MOUNTED",
+      "detail": "Return transition after a successful unmount. Navigating away only unmounts; the code stays in memory."
+    },
+    {
+      "id": "status-unloading",
+      "type": "process",
+      "label": "UNLOADING",
+      "detail": "Only if unloadApplication() queued it: waits for NOT_MOUNTED, runs the optional unload lifecycle, then deletes bootstrap / mount / unmount / unload from the record.",
+      "refs": [
+        {
+          "label": "unload.js#L40-L113",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/lifecycles/unload.js#L40-L113"
+        },
+        {
+          "label": "unloadApplication, apps.js#L183-L264",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/applications/apps.js#L183-L264"
+        }
+      ]
+    },
+    {
+      "id": "status-unloaded",
+      "type": "end",
+      "label": "↺ Back to NOT_LOADED",
+      "detail": "Return transition. The next activation calls the loading function again; fresh code depends on the module loader’s cache."
+    },
+    {
+      "id": "status-broken",
+      "type": "end",
+      "label": "SKIP_BECAUSE_BROKEN",
+      "detail": "Never touched again until the page reloads. Errors go through handleAppError; with no handlers they are rethrown via setTimeout and never break the reroute. A throwing activity function also lands here.",
+      "refs": [
+        {
+          "label": "app-errors.js#L5-L100",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/applications/app-errors.js#L5-L100"
+        },
+        {
+          "label": "app.helpers.js#L21-L28",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/applications/app.helpers.js#L21-L28"
+        }
+      ]
+    },
+    {
+      "id": "event-before-change",
+      "type": "process",
+      "label": "before-app-change | before-no-app-change",
+      "detail": "Each reroute event is CustomEvent(\"single-spa:\" + name, {detail}) on window. detail: newAppStatuses, appsByNewStatus, totalAppChanges, originalEvent, oldUrl, newUrl. before-* events report predicted statuses. None fire before start().",
+      "refs": [
+        {
+          "label": "reroute.js#L425-L433",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/reroute.js#L425-L433"
+        },
+        {
+          "label": "getCustomEventDetail, reroute.js#L369-L423",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/reroute.js#L369-L423"
+        },
+        {
+          "label": "Docs: custom events",
+          "url": "https://single-spa.js.org/docs/api/#custom-events"
+        }
+      ]
+    },
+    {
+      "id": "event-before-routing",
+      "type": "process",
+      "label": "before-routing-event",
+      "detail": "Its detail adds cancelNavigation(val = true), which accepts a value or a promise."
+    },
+    {
+      "id": "event-before-mount",
+      "type": "process",
+      "label": "before-mount-routing-event",
+      "detail": "After all outgoing apps unmounted, before any new app mounts.",
+      "refs": [
+        {
+          "label": "Docs: before-mount-routing-event",
+          "url": "https://single-spa.js.org/docs/api/#before-mount-routing-event"
+        }
+      ]
+    },
+    {
+      "id": "event-before-first",
+      "type": "process",
+      "label": "before-first-mount · once ever",
+      "detail": "Dispatched in toMountPromise with a module-level flag; no detail.",
+      "refs": [
+        {
+          "label": "mount.js#L15-L45",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/lifecycles/mount.js#L15-L45"
+        }
+      ]
+    },
+    {
+      "id": "event-first",
+      "type": "process",
+      "label": "first-mount · once ever",
+      "detail": "Fires after the first status reaches MOUNTED; no detail."
+    },
+    {
+      "id": "event-app-change",
+      "type": "process",
+      "label": "app-change | no-app-change",
+      "detail": "After-events read real statuses via getAppStatus: an app about to crash appears MOUNTED in before-app-change but SKIP_BECAUSE_BROKEN in app-change."
+    },
+    {
+      "id": "event-routing",
+      "type": "process",
+      "label": "routing-event",
+      "detail": "Last event of the pass. Listener errors are rethrown asynchronously."
+    },
+    {
+      "id": "event-cancel-unverified",
+      "type": "note",
+      "label": "UNVERIFIED · navigationIsCanceled",
+      "detail": "Docs say routing events fire for a canceled navigation with navigationIsCanceled = true. In v6.0.3 it is only a local variable, never in any detail, and the follow-up silent reroute fires no events. Older tags not checked."
+    },
+    {
+      "id": "event-order-unverified",
+      "type": "note",
+      "label": "UNVERIFIED · why before-mount runs first",
+      "detail": "The docs guarantee it. The explanation — its callback attaches to unmountAllPromise before any mount continuation (promise registration order) — is the author’s own reading."
+    },
+    {
+      "id": "event-parcel-unverified",
+      "type": "note",
+      "label": "UNVERIFIED · first-mount from parcels",
+      "detail": "Parcels share toMountPromise, so the first parcel mount (e.g. a layout loader) could trigger the first-mount events before any app mounts. Inferred from shared code."
+    },
+    {
+      "id": "event-perapp-unverified",
+      "type": "note",
+      "label": "UNVERIFIED · no per-app events",
+      "detail": "Core v6 dispatches only the synthetic popstate, the reroute events and the two first-mount events. Events like my-app:mounted would come from your own code or a helper library not inspected (e.g. single-spa-angular, single-spa-vue)."
+    },
+    {
+      "id": "parcel-mount",
+      "type": "process",
+      "label": "mountParcel / mountRootParcel",
+      "detail": "`this` is the owner: the mountParcel in props is bound to your app or parcel; mountRootParcel uses rootParcels. config is an object or a loading function; customProps must be an object with domElement.",
+      "refs": [
+        {
+          "label": "mount-parcel.js",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/parcels/mount-parcel.js"
+        },
+        {
+          "label": "Docs: Parcels API",
+          "url": "https://single-spa.js.org/docs/parcels-api/"
+        }
+      ]
+    },
+    {
+      "id": "parcel-record",
+      "type": "process",
+      "label": "Parcel record registered",
+      "detail": "Numeric id; status LOADING_SOURCE_CODE for a function config, otherwise NOT_BOOTSTRAPPED. Has its own parcels map, so parcels nest. Registered as owner.parcels[id]."
+    },
+    {
+      "id": "parcel-eager",
+      "type": "process",
+      "label": "Eager load → bootstrap → mount",
+      "detail": "Starts immediately with hardFail = true: parcel errors reject the promises you hold rather than going only to global error handlers."
+    },
+    {
+      "id": "parcel-api",
+      "type": "process",
+      "label": "Returned parcel object",
+      "detail": "mount, unmount, getStatus and the load / bootstrap / mount / unmount promises. update(props) exists only if the config has update: MOUNTED → UPDATING → MOUNTED. Applications have no update in v6.",
+      "refs": [
+        {
+          "label": "update.js#L15-L71",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/lifecycles/update.js#L15-L71"
+        }
+      ]
+    },
+    {
+      "id": "parcel-owner",
+      "type": "decision",
+      "label": "Who owns it?",
+      "detail": "Determines when the parcel unmounts.",
+      "refs": [
+        {
+          "label": "Docs: mountRootParcel vs mountParcel",
+          "url": "https://single-spa.js.org/docs/parcels-overview/#mountrootparcel-vs-mountparcel"
+        }
+      ]
+    },
+    {
+      "id": "parcel-app-owned",
+      "type": "end",
+      "label": "Unmounts with its app",
+      "detail": "App unmount first unmounts everything in app.parcels; unmountThisParcel then deletes it from owner.parcels."
+    },
+    {
+      "id": "parcel-root",
+      "type": "end",
+      "label": "Root parcel: manual unmount only",
+      "detail": "Never unmounted by an application."
+    },
+    {
+      "id": "parcel-root-unverified",
+      "type": "note",
+      "label": "UNVERIFIED · root parcels stay referenced",
+      "detail": "For root parcels parentName is undefined, so the delete owner.parcels[id] branch is skipped; unmounted root parcels appear to stay in rootParcels.parcels. Not tested."
+    },
+    {
+      "id": "load-core",
+      "type": "process",
+      "label": "Core only calls loadApp(props)",
+      "detail": "The loading function must return a promise of an object with lifecycle exports. There is no fetch, <script> injection or import-map code in core src/. Loading functions give route-based lazy loading for free.",
+      "refs": [
+        {
+          "label": "load.js#L49-L63",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/lifecycles/load.js#L49-L63"
+        },
+        {
+          "label": "Docs: loading function",
+          "url": "https://single-spa.js.org/docs/configuration/#loading-function-or-application"
+        },
+        {
+          "label": "Docs: lazy loading",
+          "url": "https://single-spa.js.org/docs/recommended-setup/#lazy-loading"
+        }
+      ]
+    },
+    {
+      "id": "load-which",
+      "type": "decision",
+      "label": "What does your loader call?",
+      "detail": "The loading function is the whole loading story."
+    },
+    {
+      "id": "load-systemjs",
+      "type": "process",
+      "label": "SystemJS: System.import(name)",
+      "detail": "Scans <script type=\"systemjs-importmap\"> (fetches src or reads inline JSON) and chains maps in DOM order; later entries win, a failed fetch warns and counts as {}. System.addImportMap adds maps at any time. Loads a classic <script> and reads the last anonymous System.register.",
+      "refs": [
+        {
+          "label": "import-maps.js",
+          "url": "https://github.com/systemjs/systemjs/blob/9647576d43294e938ddae8fe231beb62255f4e46/src/features/import-maps.js"
+        },
+        {
+          "label": "common.js#L147-L162",
+          "url": "https://github.com/systemjs/systemjs/blob/9647576d43294e938ddae8fe231beb62255f4e46/src/common.js#L147-L162"
+        },
+        {
+          "label": "script-load.js#L59-L89",
+          "url": "https://github.com/systemjs/systemjs/blob/9647576d43294e938ddae8fe231beb62255f4e46/src/features/script-load.js#L59-L89"
+        },
+        {
+          "label": "Docs: SystemJS setup",
+          "url": "https://single-spa.js.org/docs/recommended-setup/#systemjs"
+        }
+      ]
+    },
+    {
+      "id": "load-native",
+      "type": "process",
+      "label": "Native: import(name)",
+      "detail": "Import maps are in the HTML Standard: inline <script type=\"importmap\">; multiple maps may be processed, but a new map cannot redefine anything already defined or resolved. External src maps are not native.",
+      "refs": [
+        {
+          "label": "HTML Standard: import maps",
+          "url": "https://html.spec.whatwg.org/multipage/webappapis.html#import-maps"
+        }
+      ]
+    },
+    {
+      "id": "load-injector",
+      "type": "process",
+      "label": "import-map-injector",
+      "detail": "Merges every <script type=\"injector-importmap\">, including src ones, into one native import map in <head>; must run before any module loads. The current create-single-spa root template awaits window.importMapInjector.initPromise, then import(’@org/root-config’).",
+      "refs": [
+        {
+          "label": "import-map-injector README",
+          "url": "https://github.com/single-spa/import-map-injector/blob/26903341e0215247b044fa1a16b90ab9468aaef7/README.md"
+        },
+        {
+          "label": "index.ejs#L46-L50",
+          "url": "https://github.com/single-spa/create-single-spa/blob/c32f9da2a06ae60c895ba4cd5571c52ec2a5d542/packages/generator-single-spa/src/root-config/templates/src/index.ejs#L46-L50"
+        }
+      ]
+    },
+    {
+      "id": "load-overrides",
+      "type": "process",
+      "label": "import-map-overrides (local dev)",
+      "detail": "Overrides live in localStorage as import-map-override:<moduleName>. Default mode inserts an override map right after the original, which wins under SystemJS composition; use-injector mode lets the injector fold them into the single native map. A domain allow / deny list turns it off in prod.",
+      "refs": [
+        {
+          "label": "js-api.js",
+          "url": "https://github.com/single-spa/import-map-overrides/blob/c0a09921e5d6c5c6dae7988e1af9890f36555caf/src/api/js-api.js"
+        },
+        {
+          "label": "Docs: override mode",
+          "url": "https://github.com/single-spa/import-map-overrides/blob/c0a09921e5d6c5c6dae7988e1af9890f36555caf/docs/configuration.md#override-mode"
+        },
+        {
+          "label": "Docs: domain list",
+          "url": "https://github.com/single-spa/import-map-overrides/blob/c0a09921e5d6c5c6dae7988e1af9890f36555caf/docs/configuration.md#domain-list"
+        }
+      ]
+    },
+    {
+      "id": "load-deploy",
+      "type": "end",
+      "label": "Deploy: CDN bundles + map update",
+      "detail": "Upload immutable bundles to a CDN, then update the import map with import-map-deployer (“concurrent-safe”) or by download-modify-reupload in CI, which has a last-write-wins race.",
+      "refs": [
+        {
+          "label": "Docs: deployment and CI",
+          "url": "https://single-spa.js.org/docs/recommended-setup/#deployment-and-continuous-integration-ci"
+        },
+        {
+          "label": "import-map-deployer README",
+          "url": "https://github.com/single-spa/import-map-deployer/blob/b6c0ca778137d67587c77eff8dcef57d1c6021f7/README.md#why-does-this-exist"
+        }
+      ]
+    },
+    {
+      "id": "load-rootconfig-unverified",
+      "type": "note",
+      "label": "UNVERIFIED · your root config",
+      "detail": "Your root-config and import-map repos were not reviewed, so whether they use SystemJS or native maps + import-map-injector is unknown."
+    },
+    {
+      "id": "load-systemjs-unverified",
+      "type": "note",
+      "label": "UNVERIFIED · SystemJS “fixed map” doc line",
+      "detail": "SystemJS docs say the map is fixed at the first System.resolve, but code processes new map scripts later. Treated as outdated; not tested in a browser.",
+      "refs": [
+        {
+          "label": "SystemJS docs: loading import maps",
+          "url": "https://github.com/systemjs/systemjs/blob/9647576d43294e938ddae8fe231beb62255f4e46/docs/import-maps.md#loading-import-maps"
+        }
+      ]
+    },
+    {
+      "id": "load-multimap-unverified",
+      "type": "note",
+      "label": "UNVERIFIED · multiple native maps support",
+      "detail": "The HTML Standard allows multiple maps, but engine/version support was not checked. import-map-overrides’ docs, likely older, still say browsers do not support multiple maps."
+    },
+    {
+      "id": "dom-contract",
+      "type": "process",
+      "label": "Container id: single-spa-application:<name>",
+      "detail": "Not an API call: an element id shared by single-spa-layout (browser and server renderer) and the framework helpers, so helpers find the container automatically.",
+      "refs": [
+        {
+          "label": "constructLayoutEngine.js#L522-L524",
+          "url": "https://github.com/single-spa/single-spa-layout/blob/98c1911db3601e4db996a9bb5be0c62a8310fe37/src/browser/constructLayoutEngine.js#L522-L524"
+        },
+        {
+          "label": "sendLayoutHTTPResponse.js#L274-L281",
+          "url": "https://github.com/single-spa/single-spa-layout/blob/98c1911db3601e4db996a9bb5be0c62a8310fe37/src/server/sendLayoutHTTPResponse.js#L274-L281"
+        },
+        {
+          "label": "Docs: layout application",
+          "url": "https://single-spa.js.org/docs/layout-definition/#application"
+        }
+      ]
+    },
+    {
+      "id": "dom-getter",
+      "type": "process",
+      "label": "chooseDomElementGetter precedence",
+      "detail": "First match wins: 1 props.domElement (how parcels are placed) · 2 props.domElementGetter · 3 opts.domElementGetter · 4 default id-based getter. Must return an HTMLElement or it throws. single-spa-react 6.0.2 calls it inside mount.",
+      "refs": [
+        {
+          "label": "dom-element-getter-helpers.ts#L15-L52",
+          "url": "https://github.com/single-spa/dom-element-getter-helpers/blob/7d13b67989c6c3179236e286a8e4e17ee3b1e6ae/src/dom-element-getter-helpers.ts#L15-L52"
+        },
+        {
+          "label": "single-spa-react.js#L150",
+          "url": "https://github.com/single-spa/single-spa-react/blob/c4a08309d71347ae71d249ab5db0337dc9f0b7a7/src/single-spa-react.js#L150"
+        },
+        {
+          "label": "Docs: single-spa-react",
+          "url": "https://single-spa.js.org/docs/ecosystem-react/"
+        }
+      ]
+    },
+    {
+      "id": "dom-layout-q",
+      "type": "decision",
+      "label": "Using single-spa-layout?",
+      "detail": "Decides who creates and positions the container div."
+    },
+    {
+      "id": "dom-body",
+      "type": "end",
+      "label": "Div appended to <body>",
+      "detail": "The default getter creates div#single-spa-application:NAME if missing and appends it to <body> on first mount — why apps “appear at the bottom” without layout, pre-rendered divs or a getter.",
+      "refs": [
+        {
+          "label": "dom-element-getter-helpers.ts#L54-L76",
+          "url": "https://github.com/single-spa/dom-element-getter-helpers/blob/7d13b67989c6c3179236e286a8e4e17ee3b1e6ae/src/dom-element-getter-helpers.ts#L54-L76"
+        }
+      ]
+    },
+    {
+      "id": "dom-routes",
+      "type": "process",
+      "label": "constructRoutes(htmlOrJson)",
+      "detail": "Parses <single-spa-router> with DOMParser in the browser; defaults mode to history and containerEl to body; compiles every <route path> with core’s pathToActiveWhen. A default route = parent active and no sibling active.",
+      "refs": [
+        {
+          "label": "constructRoutes.js#L88-L123",
+          "url": "https://github.com/single-spa/single-spa-layout/blob/98c1911db3601e4db996a9bb5be0c62a8310fe37/src/isomorphic/constructRoutes.js#L88-L123"
+        }
+      ]
+    },
+    {
+      "id": "dom-apps",
+      "type": "process",
+      "label": "constructApplications()",
+      "detail": "Returns ordinary registerApplication configs: activeWhen is an array of enclosing routes (OR), customProps is a function of the matching route, app calls your loadApp({name}), optionally wrapped in a loader parcel.",
+      "refs": [
+        {
+          "label": "constructApplications.js#L32-L109",
+          "url": "https://github.com/single-spa/single-spa-layout/blob/98c1911db3601e4db996a9bb5be0c62a8310fe37/src/browser/constructApplications.js#L32-L109"
+        }
+      ]
+    },
+    {
+      "id": "dom-engine",
+      "type": "process",
+      "label": "constructLayoutEngine().activate()",
+      "detail": "Subscribes to core events and arranges DOM elements once immediately — hydrating first if the page was server-rendered.",
+      "refs": [
+        {
+          "label": "constructLayoutEngine.js#L29-L106",
+          "url": "https://github.com/single-spa/single-spa-layout/blob/98c1911db3601e4db996a9bb5be0c62a8310fe37/src/browser/constructLayoutEngine.js#L29-L106"
+        },
+        {
+          "label": "Docs: constructLayoutEngine",
+          "url": "https://single-spa.js.org/docs/layout-api/#constructlayoutengine"
+        }
+      ]
+    },
+    {
+      "id": "dom-before-routing",
+      "type": "process",
+      "label": "before-routing-event: redirects",
+      "detail": "<redirect> calls cancelNavigation() then navigateToUrl(to) in a setTimeout (needs single-spa ≥ 6). Unmounts error parcels for apps about to deactivate, delaying the reroute with cancelNavigation(promise → false).",
+      "refs": [
+        {
+          "label": "constructLayoutEngine.js#L171-L180",
+          "url": "https://github.com/single-spa/single-spa-layout/blob/98c1911db3601e4db996a9bb5be0c62a8310fe37/src/browser/constructLayoutEngine.js#L171-L180"
+        }
+      ]
+    },
+    {
+      "id": "dom-arrange",
+      "type": "process",
+      "label": "before-mount-routing-event: arrange",
+      "detail": "Moves, not recreates, containers of mounted apps; creates or reuses div#single-spa-application:NAME for apps about to mount, placed with insertBefore. The div exists before the helper’s mount calls getElementById."
+    },
+    {
+      "id": "dom-remove",
+      "type": "end",
+      "label": "routing-event: remove containers",
+      "detail": "Removes containers of apps no longer active per checkActivityFunctions(newUrl). It checks detail.navigationIsCanceled, which v6.0.3 never sets, so it always reads “not canceled”."
+    },
+    {
+      "id": "dom-loader",
+      "type": "end",
+      "label": "Loaders & error UIs are parcels",
+      "detail": "placeLoader hides the container, mounts the loader via mountRootParcel, waits for the loader and loadApp, unmounts it and unhides on before-mount-routing-event. Rejected loads are rethrown, so core marks LOAD_ERROR.",
+      "refs": [
+        {
+          "label": "constructApplications.js#L118-L183",
+          "url": "https://github.com/single-spa/single-spa-layout/blob/98c1911db3601e4db996a9bb5be0c62a8310fe37/src/browser/constructApplications.js#L118-L183"
+        },
+        {
+          "label": "Docs: loading UIs",
+          "url": "https://single-spa.js.org/docs/layout-definition/#loading-uis"
+        },
+        {
+          "label": "Docs: error UIs",
+          "url": "https://single-spa.js.org/docs/layout-definition/#error-uis"
+        }
+      ]
+    },
+    {
+      "id": "dom-props-unverified",
+      "type": "note",
+      "label": "UNVERIFIED · customProps key",
+      "detail": "Docs show props.customProps being destructured; the code spreads custom props at the top level and assigns name, mountParcel and singleSpa last. Confident in the code reading, but not run.",
+      "refs": [
+        {
+          "label": "prop.helpers.js#L7-L40",
+          "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/lifecycles/prop.helpers.js#L7-L40"
+        },
+        {
+          "label": "Docs: lifecycle props",
+          "url": "https://single-spa.js.org/docs/building-applications/#lifecycle-props"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "core-model",
+      "to": "router-start",
+      "label": "01 · Router patching"
+    },
+    {
+      "from": "router-start",
+      "to": "router-native",
+      "label": "patch step"
+    },
+    {
+      "from": "router-start",
+      "to": "router-capture",
+      "label": "patch step"
+    },
+    {
+      "from": "router-start",
+      "to": "router-history",
+      "label": "patch step"
+    },
+    {
+      "from": "router-native",
+      "to": "router-synthetic",
+      "label": "listens"
+    },
+    {
+      "from": "router-history",
+      "to": "router-synthetic",
+      "label": "URL changed"
+    },
+    {
+      "from": "router-native",
+      "to": "router-hash-unverified",
+      "label": "open question"
+    },
+    {
+      "from": "router-synthetic",
+      "to": "router-replay",
+      "label": "during reroute"
+    },
+    {
+      "from": "router-capture",
+      "to": "router-replay",
+      "label": "captured"
+    },
+    {
+      "from": "core-model",
+      "to": "loop-triggers",
+      "label": "02 · Reroute loop"
+    },
+    {
+      "from": "loop-triggers",
+      "to": "loop-started",
+      "label": "reroute()"
+    },
+    {
+      "from": "loop-started",
+      "to": "loop-prestart",
+      "label": "no"
+    },
+    {
+      "from": "loop-started",
+      "to": "loop-lock",
+      "label": "yes"
+    },
+    {
+      "from": "loop-lock",
+      "to": "loop-queue",
+      "label": "yes"
+    },
+    {
+      "from": "loop-lock",
+      "to": "loop-buckets",
+      "label": "no"
+    },
+    {
+      "from": "loop-buckets",
+      "to": "loop-cancel",
+      "label": "changes computed"
+    },
+    {
+      "from": "loop-cancel",
+      "to": "loop-unmount",
+      "label": "not canceled"
+    },
+    {
+      "from": "loop-cancel",
+      "to": "loop-load",
+      "label": "not canceled"
+    },
+    {
+      "from": "loop-unmount",
+      "to": "loop-mount",
+      "label": "unmountAllPromise"
+    },
+    {
+      "from": "loop-load",
+      "to": "loop-mount",
+      "label": "bootstrapped"
+    },
+    {
+      "from": "loop-mount",
+      "to": "loop-finish",
+      "label": "all settled"
+    },
+    {
+      "from": "loop-queue",
+      "to": "loop-finish",
+      "label": "drained after pass"
+    },
+    {
+      "from": "loop-mount",
+      "to": "loop-hung-unverified",
+      "label": "open question"
+    },
+    {
+      "from": "core-model",
+      "to": "status-not-loaded",
+      "label": "03 · App status machine"
+    },
+    {
+      "from": "status-not-loaded",
+      "to": "status-loading",
+      "label": "toLoadPromise"
+    },
+    {
+      "from": "status-loading",
+      "to": "status-not-bootstrapped",
+      "label": "valid exports"
+    },
+    {
+      "from": "status-loading",
+      "to": "status-load-error",
+      "label": "rejected"
+    },
+    {
+      "from": "status-loading",
+      "to": "status-broken",
+      "label": "no promise / bad exports"
+    },
+    {
+      "from": "status-load-error",
+      "to": "status-retry",
+      "label": "still active, ≥ 200 ms"
+    },
+    {
+      "from": "status-not-bootstrapped",
+      "to": "status-bootstrapping",
+      "label": null
+    },
+    {
+      "from": "status-bootstrapping",
+      "to": "status-not-mounted",
+      "label": null
+    },
+    {
+      "from": "status-bootstrapping",
+      "to": "status-broken",
+      "label": "throw / reject"
+    },
+    {
+      "from": "status-not-mounted",
+      "to": "status-mounting",
+      "label": null
+    },
+    {
+      "from": "status-not-mounted",
+      "to": "status-unloading",
+      "label": "unload queued"
+    },
+    {
+      "from": "status-mounting",
+      "to": "status-mounted",
+      "label": null
+    },
+    {
+      "from": "status-mounting",
+      "to": "status-broken",
+      "label": "throw / reject"
+    },
+    {
+      "from": "status-mounted",
+      "to": "status-unmounting",
+      "label": null
+    },
+    {
+      "from": "status-unmounting",
+      "to": "status-remount",
+      "label": "success"
+    },
+    {
+      "from": "status-unmounting",
+      "to": "status-broken",
+      "label": "throw / reject"
+    },
+    {
+      "from": "status-unloading",
+      "to": "status-unloaded",
+      "label": null
+    },
+    {
+      "from": "core-model",
+      "to": "event-before-change",
+      "label": "04 · Event sequence"
+    },
+    {
+      "from": "event-before-change",
+      "to": "event-before-routing",
+      "label": "2"
+    },
+    {
+      "from": "event-before-change",
+      "to": "event-perapp-unverified",
+      "label": "open question"
+    },
+    {
+      "from": "event-before-routing",
+      "to": "event-before-mount",
+      "label": "3 · after unmounts"
+    },
+    {
+      "from": "event-before-routing",
+      "to": "event-cancel-unverified",
+      "label": "docs vs code"
+    },
+    {
+      "from": "event-before-mount",
+      "to": "event-before-first",
+      "label": "4 · first mount only"
+    },
+    {
+      "from": "event-before-mount",
+      "to": "event-order-unverified",
+      "label": "open question"
+    },
+    {
+      "from": "event-before-first",
+      "to": "event-first",
+      "label": "5"
+    },
+    {
+      "from": "event-first",
+      "to": "event-app-change",
+      "label": "6"
+    },
+    {
+      "from": "event-first",
+      "to": "event-parcel-unverified",
+      "label": "open question"
+    },
+    {
+      "from": "event-app-change",
+      "to": "event-routing",
+      "label": "7"
+    },
+    {
+      "from": "core-model",
+      "to": "parcel-mount",
+      "label": "05 · Parcels"
+    },
+    {
+      "from": "parcel-mount",
+      "to": "parcel-record",
+      "label": null
+    },
+    {
+      "from": "parcel-record",
+      "to": "parcel-eager",
+      "label": null
+    },
+    {
+      "from": "parcel-eager",
+      "to": "parcel-api",
+      "label": "returns"
+    },
+    {
+      "from": "parcel-api",
+      "to": "parcel-owner",
+      "label": "unmount timing"
+    },
+    {
+      "from": "parcel-owner",
+      "to": "parcel-app-owned",
+      "label": "application"
+    },
+    {
+      "from": "parcel-owner",
+      "to": "parcel-root",
+      "label": "root"
+    },
+    {
+      "from": "parcel-root",
+      "to": "parcel-root-unverified",
+      "label": "open question"
+    },
+    {
+      "from": "core-model",
+      "to": "load-core",
+      "label": "06 · Import maps & loading"
+    },
+    {
+      "from": "load-core",
+      "to": "load-which",
+      "label": "your loader"
+    },
+    {
+      "from": "load-core",
+      "to": "load-rootconfig-unverified",
+      "label": "open question"
+    },
+    {
+      "from": "load-which",
+      "to": "load-systemjs",
+      "label": "SystemJS"
+    },
+    {
+      "from": "load-which",
+      "to": "load-native",
+      "label": "native ESM"
+    },
+    {
+      "from": "load-native",
+      "to": "load-injector",
+      "label": "one merged map"
+    },
+    {
+      "from": "load-native",
+      "to": "load-multimap-unverified",
+      "label": "open question"
+    },
+    {
+      "from": "load-systemjs",
+      "to": "load-systemjs-unverified",
+      "label": "docs vs code"
+    },
+    {
+      "from": "load-systemjs",
+      "to": "load-overrides",
+      "label": "dev overrides"
+    },
+    {
+      "from": "load-injector",
+      "to": "load-overrides",
+      "label": "dev overrides"
+    },
+    {
+      "from": "load-overrides",
+      "to": "load-deploy",
+      "label": "ship"
+    },
+    {
+      "from": "core-model",
+      "to": "dom-contract",
+      "label": "07 · Layout container placement"
+    },
+    {
+      "from": "dom-contract",
+      "to": "dom-getter",
+      "label": "helpers resolve it"
+    },
+    {
+      "from": "dom-getter",
+      "to": "dom-layout-q",
+      "label": "default getter"
+    },
+    {
+      "from": "dom-layout-q",
+      "to": "dom-body",
+      "label": "no"
+    },
+    {
+      "from": "dom-layout-q",
+      "to": "dom-routes",
+      "label": "yes"
+    },
+    {
+      "from": "dom-routes",
+      "to": "dom-apps",
+      "label": null
+    },
+    {
+      "from": "dom-apps",
+      "to": "dom-engine",
+      "label": null
+    },
+    {
+      "from": "dom-apps",
+      "to": "dom-loader",
+      "label": "loader parcel"
+    },
+    {
+      "from": "dom-engine",
+      "to": "dom-before-routing",
+      "label": "hook 1"
+    },
+    {
+      "from": "dom-engine",
+      "to": "dom-arrange",
+      "label": "hook 2"
+    },
+    {
+      "from": "dom-engine",
+      "to": "dom-remove",
+      "label": "hook 3"
+    },
+    {
+      "from": "dom-apps",
+      "to": "dom-props-unverified",
+      "label": "props shape"
+    }
+  ],
+  "references": [
+    {
+      "label": "API reference",
+      "url": "https://single-spa.js.org/docs/api/",
+      "group": "Docs · single-spa.js.org v6.x"
+    },
+    {
+      "label": "Configuration / root config",
+      "url": "https://single-spa.js.org/docs/configuration/",
+      "group": "Docs · single-spa.js.org v6.x"
+    },
+    {
+      "label": "Building applications",
+      "url": "https://single-spa.js.org/docs/building-applications/",
+      "group": "Docs · single-spa.js.org v6.x"
+    },
+    {
+      "label": "Parcels overview",
+      "url": "https://single-spa.js.org/docs/parcels-overview/",
+      "group": "Docs · single-spa.js.org v6.x"
+    },
+    {
+      "label": "Parcels API",
+      "url": "https://single-spa.js.org/docs/parcels-api/",
+      "group": "Docs · single-spa.js.org v6.x"
+    },
+    {
+      "label": "Recommended setup",
+      "url": "https://single-spa.js.org/docs/recommended-setup/",
+      "group": "Docs · single-spa.js.org v6.x"
+    },
+    {
+      "label": "Layout definition",
+      "url": "https://single-spa.js.org/docs/layout-definition/",
+      "group": "Docs · single-spa.js.org v6.x"
+    },
+    {
+      "label": "Layout API",
+      "url": "https://single-spa.js.org/docs/layout-api/",
+      "group": "Docs · single-spa.js.org v6.x"
+    },
+    {
+      "label": "SSR overview",
+      "url": "https://single-spa.js.org/docs/ssr-overview/",
+      "group": "Docs · single-spa.js.org v6.x"
+    },
+    {
+      "label": "single-spa-react",
+      "url": "https://single-spa.js.org/docs/ecosystem-react/",
+      "group": "Docs · single-spa.js.org v6.x"
+    },
+    {
+      "label": "Devtools / inspector",
+      "url": "https://single-spa.js.org/docs/devtools/",
+      "group": "Docs · single-spa.js.org v6.x"
+    },
+    {
+      "label": "src/navigation/navigation-events.js",
+      "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/navigation-events.js",
+      "group": "Core source · v6.0.3 @ b619c26"
+    },
+    {
+      "label": "src/navigation/reroute.js",
+      "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/navigation/reroute.js",
+      "group": "Core source · v6.0.3 @ b619c26"
+    },
+    {
+      "label": "src/applications/apps.js",
+      "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/applications/apps.js",
+      "group": "Core source · v6.0.3 @ b619c26"
+    },
+    {
+      "label": "src/applications/timeouts.js",
+      "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/applications/timeouts.js",
+      "group": "Core source · v6.0.3 @ b619c26"
+    },
+    {
+      "label": "src/applications/app-errors.js",
+      "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/applications/app-errors.js",
+      "group": "Core source · v6.0.3 @ b619c26"
+    },
+    {
+      "label": "src/parcels/mount-parcel.js",
+      "url": "https://github.com/single-spa/single-spa/blob/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/parcels/mount-parcel.js",
+      "group": "Core source · v6.0.3 @ b619c26"
+    },
+    {
+      "label": "src/lifecycles/",
+      "url": "https://github.com/single-spa/single-spa/tree/b619c26f0a39bbc8f175805a361a88a22fbd6d9b/src/lifecycles",
+      "group": "Core source · v6.0.3 @ b619c26"
+    },
+    {
+      "label": "single-spa-layout constructLayoutEngine.js",
+      "url": "https://github.com/single-spa/single-spa-layout/blob/98c1911db3601e4db996a9bb5be0c62a8310fe37/src/browser/constructLayoutEngine.js#L29-L106",
+      "group": "Ecosystem source"
+    },
+    {
+      "label": "dom-element-getter-helpers.ts",
+      "url": "https://github.com/single-spa/dom-element-getter-helpers/blob/7d13b67989c6c3179236e286a8e4e17ee3b1e6ae/src/dom-element-getter-helpers.ts#L15-L52",
+      "group": "Ecosystem source"
+    },
+    {
+      "label": "single-spa-react.js v6.0.2",
+      "url": "https://github.com/single-spa/single-spa-react/blob/c4a08309d71347ae71d249ab5db0337dc9f0b7a7/src/single-spa-react.js",
+      "group": "Ecosystem source"
+    },
+    {
+      "label": "SystemJS import-maps.js",
+      "url": "https://github.com/systemjs/systemjs/blob/9647576d43294e938ddae8fe231beb62255f4e46/src/features/import-maps.js",
+      "group": "Ecosystem source"
+    },
+    {
+      "label": "SystemJS docs/import-maps.md",
+      "url": "https://github.com/systemjs/systemjs/blob/9647576d43294e938ddae8fe231beb62255f4e46/docs/import-maps.md",
+      "group": "Ecosystem source"
+    },
+    {
+      "label": "import-map-overrides js-api.js",
+      "url": "https://github.com/single-spa/import-map-overrides/blob/c0a09921e5d6c5c6dae7988e1af9890f36555caf/src/api/js-api.js",
+      "group": "Ecosystem source"
+    },
+    {
+      "label": "import-map-overrides docs/configuration.md",
+      "url": "https://github.com/single-spa/import-map-overrides/blob/c0a09921e5d6c5c6dae7988e1af9890f36555caf/docs/configuration.md",
+      "group": "Ecosystem source"
+    },
+    {
+      "label": "import-map-injector README",
+      "url": "https://github.com/single-spa/import-map-injector/blob/26903341e0215247b044fa1a16b90ab9468aaef7/README.md",
+      "group": "Ecosystem source"
+    },
+    {
+      "label": "import-map-deployer README",
+      "url": "https://github.com/single-spa/import-map-deployer/blob/b6c0ca778137d67587c77eff8dcef57d1c6021f7/README.md",
+      "group": "Ecosystem source"
+    },
+    {
+      "label": "create-single-spa index.ejs",
+      "url": "https://github.com/single-spa/create-single-spa/blob/c32f9da2a06ae60c895ba4cd5571c52ec2a5d542/packages/generator-single-spa/src/root-config/templates/src/index.ejs",
+      "group": "Ecosystem source"
+    },
+    {
+      "label": "create-single-spa layout/root-config.ejs",
+      "url": "https://github.com/single-spa/create-single-spa/blob/c32f9da2a06ae60c895ba4cd5571c52ec2a5d542/packages/generator-single-spa/src/root-config/templates/src/layout/root-config.ejs",
+      "group": "Ecosystem source"
+    },
+    {
+      "label": "HTML Standard: import maps",
+      "url": "https://html.spec.whatwg.org/multipage/webappapis.html#import-maps",
+      "group": "Spec"
+    },
+    {
+      "label": "WICG/import-maps (now points to the spec)",
+      "url": "https://github.com/WICG/import-maps",
+      "group": "Spec"
+    }
+  ]
+}

@@ -103,6 +103,16 @@ Then embed the HTML:
 />
 ```
 
+## Large interactive charts
+
+Large interactive charts (like Flux flowcharts) do not go inline with `<Artifact>`. The Artifact iframe is sandboxed (`allow-scripts` only, so citation links cannot open a new tab) and fixed-height. Put the standalone HTML, with its source JSON beside it, in `notebook/static/flux/`, and link the HTML from the reference `.mdx`:
+
+```mdx
+[Open the chart](pathname:///flux/your-chart.html)
+```
+
+`pathname://` serves the file as its own page and still picks up the site `baseUrl`.
+
 ## PR format
 
 - **Branch:** `doc/<kebab-case-topic>`
