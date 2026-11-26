@@ -36,9 +36,61 @@ article {
   max-width: 800px;
 }
 
-/* Tag pills */
-.theme-doc-tags-list a {
+/* Tag pills.
+   cosmos-docusaurus-theme styles every [class*='tag_'] element. Docusaurus
+   CSS modules name both the TagsListInline <li> and the Tag <a> "tag", so
+   each match gets its own border, radius, and padding: a pill inside a pill.
+   Hover then highlights the inner pill a second time. The link is the pill. */
+li[class*='tag_'],
+li[class*='tag_']:hover {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.theme-doc-footer-tags-row .col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+}
+
+.theme-doc-footer-tags-row ul[class*='tags'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  flex: 1 1 12rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.theme-doc-footer-tags-row li[class*='tag_'] {
+  margin: 0;
+}
+
+.theme-doc-footer-tags-row a[class*='tag_'] {
+  display: inline-block;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
   font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ifm-font-color-base);
+  background: transparent;
+  text-decoration: none;
+}
+
+.theme-doc-footer-tags-row a[class*='tag_']:hover,
+.theme-doc-footer-tags-row a[class*='tag_']:focus-visible {
+  border-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
+  background: color-mix(in srgb, var(--ifm-color-primary) 16%, transparent);
+  text-decoration: none;
 }
 
 /* Source link styling for reference docs */

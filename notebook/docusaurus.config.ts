@@ -1,6 +1,7 @@
 import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
+import {sidebarItemsGenerator} from './sidebarItemsGenerator';
 
 const config: Config = {
   title: 'Spellbook',
@@ -38,6 +39,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
+          sidebarItemsGenerator,
           routeBasePath: '/', // Docs at root — no /docs/ prefix
           editUrl: 'https://github.com/atamburino/spellbook/edit/main/notebook/',
           showLastUpdateTime: true,
