@@ -36,6 +36,11 @@ article {
   max-width: 800px;
 }
 
+/* The school index is a card grid, so it needs more than the note width. */
+.docs-doc-id-school\/index article {
+  max-width: 1080px;
+}
+
 /* Tag pills.
    cosmos-docusaurus-theme styles every [class*='tag_'] element. Docusaurus
    CSS modules name both the TagsListInline <li> and the Tag <a> "tag", so
