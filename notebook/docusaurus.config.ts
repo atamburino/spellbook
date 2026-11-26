@@ -26,6 +26,12 @@ const config: Config = {
     locales: ['en'],
   },
 
+  markdown: {
+    mermaid: true,
+  },
+
+  clientModules: ['./src/clientModules/d3Transition.ts'],
+
   presets: [
     [
       'classic',
@@ -44,7 +50,47 @@ const config: Config = {
     ],
   ],
 
-  themes: ['@docusaurus/theme-live-codeblock'],
+  plugins: [
+    [
+      '@docusaurus/plugin-ideal-image',
+      {
+        quality: 70,
+        max: 1030,
+        min: 640,
+        steps: 2,
+        disableInDev: false,
+      },
+    ],
+    'docusaurus-plugin-image-zoom',
+    [
+      'docusaurus-plugin-copy-page-button',
+      {
+        placement: 'auto',
+        enabledActions: ['copy', 'view', 'chatgpt', 'claude', 'perplexity', 'gemini'],
+      },
+    ],
+  ],
+
+  themes: [
+    '@docusaurus/theme-live-codeblock',
+    '@docusaurus/theme-mermaid',
+    [
+      'cosmos-docusaurus-theme',
+      {
+        injectFavicon: false,
+      },
+    ],
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        hashed: true,
+        language: ['en'],
+        indexBlog: false,
+        docsRouteBasePath: '/',
+        highlightSearchTermsOnTargetPage: true,
+      },
+    ],
+  ],
 
   themeConfig: {
     colorMode: {
@@ -90,7 +136,20 @@ const config: Config = {
       minHeadingLevel: 2,
       maxHeadingLevel: 4,
     },
-  } satisfies Preset.ThemeConfig,
+    mermaid: {
+      theme: {light: 'neutral', dark: 'dark'},
+    },
+    zoom: {
+      selector: '.markdown > img',
+      background: {
+        light: 'rgb(255, 255, 255)',
+        dark: 'rgb(10, 10, 10)',
+      },
+    },
+  } satisfies Preset.ThemeConfig & {
+    mermaid: {theme: {light: 'neutral'; dark: 'dark'}};
+    zoom: {selector: string; background: {light: string; dark: string}};
+  },
 };
 
 export default config;

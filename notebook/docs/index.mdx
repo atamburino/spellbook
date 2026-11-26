@@ -20,4 +20,10 @@ A unified reference notebook — saved links, code snippets, school notes, and e
 A bot watches for things I want to save and opens PRs with structured markdown.
 When merged, this site auto-deploys to GitHub Pages.
 
+```mermaid
+flowchart LR
+  save[Save a note] --> pr[Doc bot opens a PR]
+  pr --> pages[GitHub Pages]
+```
+
 Everything is markdown. Everything is searchable. Everything is in one place.
