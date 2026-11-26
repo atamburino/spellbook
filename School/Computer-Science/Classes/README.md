@@ -5,6 +5,7 @@ Use one Markdown page per class.
 ## Active Classes
 
 - [CS 530: AI Principles and Applications](CS-530-AI-Principles-and-Applications.md)
+- [CS 540: Data Literacy & Visualization](../../../notebook/docs/school/cs-540/index.mdx)
 
 ## Suggested Class Page Shape
 
