@@ -1,0 +1,168 @@
+---
+title: "Visualization principles: chart choice, audience, decluttering, and data stories"
+sidebar_label: Visualization principles
+sidebar_position: 4
+tags: [cs-540, data-visualization, storytelling, design, accessibility]
+date: 2026-11-26
+custom_edit_url: null
+---
+
+# Visualization principles: chart choice, audience, decluttering, and data stories
+
+> **Source:** CS-540 Modules 4 to 9, the zyBook chapters on visualization and storytelling (which teach Knaflic's *Storytelling with Data* lessons), and Kenn Adams on the story spine. Full references at the bottom.
+>
+> **Saved via:** End-of-course notes.
+
+## The idea
+
+A chart is for a specific person and a specific decision. Pick the display that fits the data and the relationship, cut everything that doesn't help, point at the one thing that matters, and put it in a story with a beginning, middle, and end.
+
+## Knaflic's six lessons (the core of Modules 7 and 8)
+
+1. **Understand the context.** Who is the audience, what do they need to know or do, and what data backs it up.
+2. **Choose an appropriate display.** Simple text for one or two numbers, lines for continuous data, bars for categories with a zero baseline.
+3. **Eliminate clutter.** Remove what doesn't add information. Use alignment, white space, and contrast.
+4. **Focus attention where you want it.** Color, size, and position, used sparingly. Test it: where are your eyes drawn first?
+5. **Think like a designer.** Highlight the important stuff, cut distractions, build a visual hierarchy, label in plain text.
+6. **Tell a story.** Beginning (plot), middle (twists), end (call to action).
+
+## Exploratory vs. explanatory
+
+| | Exploratory | Explanatory |
+| --- | --- | --- |
+| Who it's for | Me, maybe one teammate | People who didn't do the analysis |
+| Goal | Find out what's in the data | Get one point across and drive an action |
+| Charts | Many, rough, fast, mostly thrown away | One or two, designed and annotated |
+| Fails when | I chase noise or stop too early | I overstate the data or bury the point |
+
+Knaflic's image: exploration is opening a hundred oysters to find a couple of pearls. The explanatory version shows the pearls.
+
+## Choosing a chart
+
+Start from the relationship you want to show, then the data type.
+
+| I want to show | Use | Avoid |
+| --- | --- | --- |
+| One or two key numbers | Big text with a short label | A chart for the sake of it |
+| Change over time | Line chart; indexed lines (base = 100) for different units | Bars for long continuous series, dual y-axes |
+| Compare categories | Bar chart, horizontal and sorted when labels are long | Pie and donut charts, 3D |
+| Parts of a whole | Sorted bars or 100% stacked bars | Pies with many slices |
+| Distribution | Histogram, box plot | Means alone |
+| Relationship between two numbers | Scatter plot; bubble size for a third variable | Implying causation |
+| Matrix of values (correlation, cluster profiles) | Heatmap | Raw tables of 100 numbers |
+| Hierarchy or many groups | Overview chart plus drill-down | One chart with every level at once |
+| Many lines | Highlight one or two, gray the rest, or small multiples | Spaghetti graphs |
+
+Rules that came up again and again:
+
+- Bars start at zero.
+- Use a log scale when values span orders of magnitude and relative change matters.
+- Normalize before comparing places of different sizes (per resident, per trip, per 1,000 tons).
+
+## Designing for the audience
+
+In Module 9 the same analysis served two groups, so the charts split:
+
+| | Leadership / executives | The team that acts (carrier sales and operations) |
+| --- | --- | --- |
+| Needs | The headline and why it matters to the business | Where to act and on what |
+| Charts | Ranked bar of top origin states; indexed cost lines | Bubble scatter of freight vs. carrier trucks; fleet-size bars; equipment setup grouped bars |
+| Design | Few marks, national framing, the finding in the title | State labels, ratios they can act on, a reference line, highlighted states |
+
+The same Module 4 lesson from the other side: a technically complete multi-line chart can still be the wrong pick for non-expert policymakers. Choose for the reader, then justify each refinement by what that reader needs.
+
+## Decluttering checklist
+
+- [ ] Remove borders, heavy gridlines, and the top and right spines
+- [ ] Gridlines only on the value axis, and light
+- [ ] Label data directly (end of line, on the bar) instead of a legend when you can
+- [ ] Round numbers to what the reader needs
+- [ ] Left-align the title and put it where the eye starts
+- [ ] Put the source and any caveats in a small gray note at the bottom
+- [ ] Cut anything that's left over and doesn't support the claim
+
+## Titles that state the claim
+
+Name the finding, not the axes.
+
+| Weak | Strong |
+| --- | --- |
+| "Truck freight by state, 2024" | "Five states ship 48% of U.S. vehicle freight by truck, but carrier counts do not follow the freight" |
+| "Fleet size distribution" | "About half of vehicle-hauling carriers run a single truck" |
+| "Diesel vs. PPI" | "Since January 2020, truckload rates are up 69% and diesel is up 105%" |
+
+Horizontal logic test: read only the titles in order. They should tell the whole story by themselves.
+
+## Labels and annotation
+
+- Axis labels say the unit: "million tons," "share of carriers," "Index, January 2020 = 100."
+- Annotate the point you're talking about (the last value on a line, the highlighted states).
+- Define jargon once in a note (power unit, kt, PPI).
+- Hover tooltips should show real counts, not the normalized 0 to 1 values used for plotting.
+
+## Color for emphasis
+
+- Gray for context, one strong color for the thing that matters.
+- Keep one color meaning across every chart in a report (in 9-1: blue for carriers, orange for highlighted states, gold for diesel, gray for context).
+- Use colorblind-safe palettes (Okabe-Ito, seaborn `"colorblind"`). Don't rely on red against green.
+- Diverging colormaps only for data with a meaningful center (correlation around 0). Sequential colormaps for values that only go up.
+- Color should never be the only way to read the chart. Back it with labels or position.
+
+## Overview and detail
+
+- Overview first: the national or global picture in one simple chart.
+- Detail on demand: dropdowns, a range slider, or a second chart that zooms into one part.
+- In 9-1 this was the "multi-level" requirement: a high-level overview chart for leadership and detailed insight charts for the team.
+- In Module 6 it was a global total with a drill-down by continent and an overview plus detail layout.
+
+## Accessibility (Module 6)
+
+- Colorblind-safe palette, enough contrast, readable font sizes.
+- Plain-language titles and labels.
+- Don't distort with scale tricks: truncated bar axes, mismatched dual axes, or uneven intervals.
+- Use an appropriate map projection for geographic charts.
+
+## Data stories with the Pixar story spine
+
+Kenn Adams created the story spine in 1991 as an improv exercise. It's often called the Pixar story spine. Each line is a prompt:
+
+1. **Once upon a time...** the normal situation
+2. **Every day...** what keeps happening
+3. **But one day...** the change
+4. **Because of that...** the first consequence
+5. **Because of that...** the next consequence
+6. **Until finally...** the resolution, which is your recommendation
+7. **And ever since then...** what's different afterward
+
+How the 9-1 story used it (public data only):
+
+| Beat | 9-1 content | Chart |
+| --- | --- | --- |
+| Once upon a time | Car shipping runs on tens of thousands of small carriers. 52% run one truck | Fleet-size bars |
+| Every day | About 193 million tons of vehicles and parts move by truck, and nearly half starts in five states | Ranked origin-state bars |
+| One day | Costs jumped: diesel up 105%, truckload rates up 69% since January 2020 | Indexed cost lines |
+| Because of that | Every empty mile costs more, so where carriers are based compared to where cars are matters | |
+| Because of that | Carriers track population (r = 0.84) more than freight (r = 0.57). KY has 373 trucks per 1,000 kt vs. 1,710 nationally | Bubble scatter |
+| Until finally | Focus carrier recruiting on KY, MI, AR, AL, and SC, and build tools that fit how carriers describe their equipment | Equipment setup bars |
+
+Guardrails:
+
+- Every "because of that" claims a cause. Keep it only if the data supports that step. Otherwise say "at the same time."
+- Lead with the Big Idea when the audience might miss it at the end.
+- Write the 3-minute story first. If you can't say it in three minutes, the charts won't fix it.
+- Storyboard on paper before building slides or charts.
+
+## Key takeaways
+
+- Context first: who, what they need to do, and what data backs it.
+- Pick the chart from the relationship and the data type, not from habit.
+- Declutter, then highlight one thing with color or size.
+- Titles state the finding. The titles alone should tell the story.
+- Different audiences get different charts from the same analysis.
+- A story structure makes a finding stick, but every causal step still needs evidence.
+
+## References
+
+Adams, K. (2013, June 5). *Back to the story spine*. Aerogramme Writers' Studio. https://www.aerogrammestudio.com/2013/06/05/back-to-the-story-spine/
+
+Knaflic, C. N. (2015). *Storytelling with data: A data visualization guide for business professionals*. Wiley. https://www.wiley.com/en-us/Storytelling+with+Data%3A+A+Data+Visualization+Guide+for+Business+Professionals-p-9781119002253

@@ -1,0 +1,87 @@
+---
+title: "Public datasets and sources used in CS-540"
+sidebar_label: Datasets and sources
+sidebar_position: 5
+tags: [cs-540, open-data, datasets, fmcsa, census, fred]
+date: 2026-11-26
+custom_edit_url: null
+---
+
+# Public datasets and sources used in CS-540
+
+> **Source:** The data citations in my CS-540 notebooks and papers. Every link was checked on Nov 26, 2026.
+>
+> **Saved via:** End-of-course notes.
+
+## The idea
+
+Every public data set I used in the course, what one row means, what it measures, and the catch to remember. The first group is the freight and trucking data from the final project. The second group is everything else from the weekly activities.
+
+## Freight and trucking (Module 9 project)
+
+| Source | Publisher | What it measures | Grain | Join key |
+| --- | --- | --- | --- | --- |
+| [FMCSA Company Census File](https://data.transportation.gov/d/az4n-8mr2) | Federal Motor Carrier Safety Administration, on the U.S. DOT open data portal | Every registered carrier: status, operation type, cargo flags, power units, drivers, mileage, and owned, term-leased, and trip-leased trucks, tractors, and trailers (from the MCS-150 form) | One carrier (USDOT number) | Postal state code |
+| [Freight Analysis Framework (FAF5)](https://faf.ornl.gov/faf5/) | Bureau of Transportation Statistics and FHWA, hosted by Oak Ridge National Laboratory | Modeled tons and value of freight between origin and destination regions, by commodity (SCTG) and mode | Origin, destination, commodity, mode | State FIPS code |
+| [Census state population estimates (NST-EST2025-ALLDATA)](https://www.census.gov/data/datasets/time-series/demo/popest/2020s-state-total.html) | U.S. Census Bureau | Annual resident population and components of change, April 2020 to July 2025 | One state per row (filter `SUMLEV == 40`) | State FIPS code |
+| [US Diesel Sales Price (GASDESW)](https://fred.stlouisfed.org/series/GASDESW) | U.S. EIA, via FRED | Average retail diesel price, dollars per gallon | Weekly, ending Monday | Date (resample to month) |
+| [PPI: General Freight Trucking, Long-Distance Truckload (PCU484121484121)](https://fred.stlouisfed.org/series/PCU484121484121) | U.S. BLS, via FRED | Producer price index for long-distance truckload, Dec 2003 = 100 | Monthly | Date |
+| [2021 Vehicle Inventory and Use Survey public use file](https://www.census.gov/data/datasets/2021/econ/vius/2021-vius-puf.html) | U.S. Census Bureau and BTS | Survey of truck characteristics and use (body type, steering, use) | One sampled vehicle | None (context only) |
+
+### Catches to remember
+
+**FMCSA Company Census File**
+
+- Self-reported on the MCS-150. FMCSA asks carriers to update every 24 months, and many don't.
+- Counts sit at the carrier's physical address state, not where the trucks run.
+- Typos are real: one carrier reported 858,001 power units. Cap or check before summing.
+- "Power units" means trucks plus tractors. Trailers are counted separately.
+- The Motor Vehicles cargo flag is broad. Over half of those carriers also flag general freight.
+- It doesn't say whether a trailer is open or enclosed, or how many cars it holds.
+- The open data API supports filters (for example active status and a cargo flag), so you can pull a subset instead of the whole file.
+
+**FAF5**
+
+- Tons are modeled estimates, not counts.
+- SCTG 36 is "motorized and other vehicles," which includes parts.
+- In-state flows (origin equals destination) are a large share. Don't double count them when you add outbound and inbound.
+- The full state file is large. Filter to the commodity you need first.
+
+**Census population**
+
+- Includes the U.S., regions, states, and Puerto Rico in one file. Filter by summary level.
+- Read with `encoding="latin-1"` because of accented characters.
+
+**FRED series**
+
+- Different frequencies. Average the weekly series to monthly before joining.
+- Units differ (dollars vs. an index). Index both to the same base period to plot them together.
+
+**VIUS 2021**
+
+- Survey sample, so small subgroups are thin. The stinger-steered auto rack estimate (about two-thirds of tractor-pulled auto racks) came from only 235 sample records.
+
+## Other data sets from the weekly activities
+
+| Module | Source | What it measures | Catch |
+| --- | --- | --- | --- |
+| 1 | [Provisional COVID-19 Deaths by Sex and Age](https://catalog.data.gov/dataset/provisional-covid-19-deaths-by-sex-and-age) (CDC/NCHS, via Data.gov) | Deaths by sex, age group, state, and period | Counts of 1 to 9 suppressed for privacy; By Total, By Year, and By Month rows mixed in one table; provisional |
+| 2 | Course-provided business data (Codio) | Customer gender, age, income, spending score, membership, product type | Deliberately dirty practice file, not a public source |
+| 3 | [NOAA NCEI Climate Data Online web services](https://www.ncei.noaa.gov/cdo-web/webservices/v2), GHCND daily data | Daily station readings (precipitation, snow, temperature, wind) plus a station lookup | Long format; quality flags packed into one attributes string; not every station measures everything |
+| 4 | [NCES Digest of Education Statistics](https://nces.ed.gov/programs/digest/) (state appropriations table) | State appropriations for higher education per FTE student over time | Wide format with one column per academic year |
+| 5 | [College Scorecard](https://collegescorecard.ed.gov/data/) (U.S. Department of Education), most recent data by field of study | Program graduates, median debt, and earnings after completion | `"PS"` privacy suppression makes numeric columns load as text; file sorted by state |
+| 6 | [Our World in Data: COVID-19 deaths](https://ourworldindata.org/covid-deaths) (from WHO reports) | Confirmed deaths by country, running totals | Region and income-group columns mixed with countries; cumulative values |
+| 7 | [FTA National Transit Database](https://www.transit.dot.gov/ntd) | Transit agency ridership, fares, operating expenses, and service area population by mode | Money and counts stored as text with `$` and commas; inactive modes with stale years |
+
+## Picking a public data source (what the course stressed)
+
+- Prefer the agency that collects the data, or its official open data portal.
+- Read the methodology and footnotes before using a column.
+- Note the date you pulled it and the date the source last updated.
+- Write down what it does not measure, and say so next to any chart that uses it.
+
+## Key takeaways
+
+- Government open data is reliable about how it was collected, not about whether it fits your question.
+- Most joins between federal sources need a crosswalk (FIPS to postal code, weekly to monthly).
+- Write the catch next to the source, because it's the first thing you forget.

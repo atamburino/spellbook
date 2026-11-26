@@ -1,0 +1,442 @@
+---
+title: "CS-540 Python patterns: pandas, NumPy, Matplotlib, seaborn, Plotly"
+sidebar_label: Python patterns
+sidebar_position: 2
+tags: [cs-540, python, pandas, matplotlib, seaborn, plotly]
+date: 2026-11-26
+custom_edit_url: null
+---
+
+# CS-540 Python patterns: pandas, NumPy, Matplotlib, seaborn, Plotly
+
+> **Source:** My CS-540 Codio notebooks (Modules 2 to 9), trimmed to the reusable part. Each pattern links to the official docs.
+>
+> **Saved via:** End-of-course notes.
+
+## The idea
+
+The same 20 or so moves came up every week: load, inspect, clean, fix types, dedupe, filter, reshape, group, merge, cap, resample, correlate, plot, save. These are the versions I actually used, with the docs page for each.
+
+**Libraries used in the course:** pandas, NumPy, Matplotlib, seaborn, Plotly, scikit-learn (scaling, PCA), SciPy (hierarchical clustering), and `pathlib` for paths.
+
+## Setup
+
+```python
+import os
+from pathlib import Path
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
+import seaborn as sns
+
+pd.set_option("display.max_columns", 40)   # see wide tables
+pd.set_option("display.width", 160)
+os.makedirs("data/output", exist_ok=True)  # every chart and CSV goes here
+```
+
+Docs: [pandas options](https://pandas.pydata.org/docs/user_guide/options.html) · [pathlib](https://docs.python.org/3/library/pathlib.html)
+
+## Load
+
+```python
+carriers_raw = pd.read_csv("data/carriers.csv", dtype=str)           # read as text first, convert on purpose later
+census_raw = pd.read_csv("data/census.csv", encoding="latin-1")      # file has accented characters
+diesel_raw = pd.read_csv("data/fred_GASDESW.csv", parse_dates=["observation_date"])
+scorecard = pd.read_csv("data/fos.csv", low_memory=False)            # wide file, avoid mixed-type guessing
+
+clean = carriers_raw.copy()   # keep the raw frame untouched for before/after checks
+```
+
+- `dtype=str` stops pandas from silently turning IDs with leading zeros into numbers.
+- Wrap the load in `try/except FileNotFoundError` with a readable message when the path might be wrong.
+
+Docs: [read_csv](https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html) · [DataFrame.copy](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.copy.html)
+
+## Inspect
+
+```python
+print("shape:", df.shape)
+df.head()
+df.info()                                   # dtypes and non-null counts
+df.describe().round(1)                      # numeric summary
+df.describe(include="category")             # category summary
+df["Gender"].value_counts(dropna=False)     # dropna=False shows the NaN bucket too
+df.isna().sum()                             # nulls per column
+df.isna().mean().round(3).sort_values(ascending=False)   # null share per column
+df["station"].nunique()
+df.groupby("datatype")["value"].describe()  # stats per category to spot nonsense values
+```
+
+Docs: [info](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.info.html) · [describe](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.describe.html) · [value_counts](https://pandas.pydata.org/docs/reference/api/pandas.Series.value_counts.html) · [isna](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.isna.html)
+
+## Clean text
+
+```python
+for col in ["Gender", "Membership", "ProductType"]:
+    df[col] = df[col].astype("string").str.strip()
+
+df["Membership"] = df["Membership"].replace("", pd.NA)          # blank after strip = missing
+df["ProductType"] = df["ProductType"].str.lower()               # one spelling per category
+df["Gender"] = df["Gender"].replace({"smp": pd.NA})             # junk token -> missing
+
+# Join keys: trim, upper-case, drop a constant prefix so both tables match exactly
+df["station_id"] = df["station_id"].str.strip().str.upper().str.replace("GHCND:", "", regex=False)
+
+# Money stored as text like "$1,493,280.00 "
+def to_number(series):
+    cleaned = series.astype(str).str.replace(r"[$,\s]", "", regex=True)
+    return pd.to_numeric(cleaned, errors="coerce")
+
+# Split "PLACE 2.6 SSW, NY US" into parts with named groups
+parts = df["name"].str.strip().str.extract(r"^(?P<place>.+?),\s*(?P<state>[A-Z]{2})\s+(?P<country>[A-Z]{2})$")
+```
+
+Docs: [Series.str.strip](https://pandas.pydata.org/docs/reference/api/pandas.Series.str.strip.html) · [Series.str.replace](https://pandas.pydata.org/docs/reference/api/pandas.Series.str.replace.html) · [Series.str.extract](https://pandas.pydata.org/docs/reference/api/pandas.Series.str.extract.html)
+
+## Fix data types
+
+```python
+df["power_units"] = pd.to_numeric(df["power_units"], errors="coerce")       # bad values -> NaN, no crash
+df["add_date"] = pd.to_datetime(df["add_date"].str[:8], format="%Y%m%d", errors="coerce")
+df["date"] = pd.to_datetime(df["date"]).dt.normalize()                      # drop the T00:00:00 part
+df["Membership"] = df["Membership"].astype("category")                      # few repeated labels
+df[flag_cols] = df[flag_cols].astype("Int64")                               # nullable int keeps <NA>
+```
+
+- An integer column with any `NaN` loads as `float64`. That's expected. Use `Int64` (capital I) if you need integers with gaps.
+
+Docs: [to_numeric](https://pandas.pydata.org/docs/reference/api/pandas.to_numeric.html) · [to_datetime](https://pandas.pydata.org/docs/reference/api/pandas.to_datetime.html) · [astype](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.astype.html) · [Categorical data](https://pandas.pydata.org/docs/user_guide/categorical.html)
+
+## Invalid and suppressed values
+
+```python
+invalid_age = ~df["Age"].between(18, 100)
+df.loc[invalid_age, "Age"] = pd.NA                     # invalidate, don't guess
+
+clean = data.replace({"PS": np.nan, "PrivacySuppressed": np.nan})   # privacy markers -> real missing
+
+bad = df["precip_mm"] < 0                               # physically impossible
+df.loc[bad, "precip_mm"] = np.nan
+```
+
+Docs: [Series.between](https://pandas.pydata.org/docs/reference/api/pandas.Series.between.html) · [Working with missing data](https://pandas.pydata.org/docs/user_guide/missing_data.html)
+
+## Missing values
+
+```python
+df[["Gender", "Membership"]] = df[["Gender", "Membership"]].fillna("Unknown")   # explicit level for categories
+df = df.dropna(subset=measure_cols, how="all")        # drop rows with nothing to analyze
+
+null_report = pd.DataFrame({
+    "nulls": df.isna().sum(),
+    "pct_null": (df.isna().mean() * 100).round(1),
+    "dtype": df.dtypes.astype(str),
+})
+```
+
+- Don't fill measurements with 0 unless the source says a blank means zero. "Not measured" is not "0 mm."
+
+Docs: [fillna](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.fillna.html) · [dropna](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.dropna.html)
+
+## Duplicates
+
+```python
+print("exact duplicate rows:", df.duplicated().sum())
+print("duplicate keys:", df.duplicated(subset=["station", "date", "datatype"]).sum())
+df = df.drop_duplicates().drop_duplicates(subset="station_id", keep="first")
+assert df["station_id"].is_unique
+```
+
+Docs: [duplicated](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.duplicated.html) · [drop_duplicates](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.drop_duplicates.html)
+
+## Filter to the population that answers the question
+
+```python
+fh = carriers[
+    carriers["phy_state"].isin(us_states)
+    & carriers["classdef"].str.contains("AUTHORIZED FOR HIRE", na=False)   # na=False: NaN counts as no match
+    & carriers["carrier_operation"].eq("A")                                # interstate
+    & (carriers["power_units"] >= 1)
+].copy()                                                                   # .copy() avoids SettingWithCopyWarning
+print(f"{len(carriers):,} -> {len(fh):,} rows")
+```
+
+## Reshape: pivot, pivot_table, melt
+
+```python
+# Long -> wide: one row per station per day, one column per reading type. Fails on duplicate keys, which is a free check.
+wide = (weather.pivot(index=["station_id", "date"], columns="data_type", values="value")
+               .reset_index())
+wide.columns.name = None
+
+# Long -> wide with aggregation, then row percentages
+mix = active.pivot_table(index="Agency", columns="Mode Group", values="Trips", aggfunc="sum", fill_value=0)
+mix_pct = mix.div(mix.sum(axis=1), axis=0) * 100
+
+# Wide -> long (needed for Plotly animation frames)
+long = wide_by_country.melt(id_vars="date", var_name="Country", value_name="Total Deaths")
+```
+
+Docs: [pivot](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.pivot.html) · [pivot_table](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.pivot_table.html) · [melt](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.melt.html) · [Reshaping guide](https://pandas.pydata.org/docs/user_guide/reshaping.html)
+
+## Group and aggregate
+
+```python
+carrier_state = fh.groupby("phy_state").agg(
+    carriers=("dot_number", "count"),
+    carrier_trucks=("power_units_capped", "sum"),
+    pct_one_truck=("power_units", lambda s: (s == 1).mean() * 100),
+).reset_index().rename(columns={"phy_state": "state"})
+
+outbound = truck.groupby("dms_origst")["tons_2024"].sum().rename("out_kt")
+inbound = truck.groupby("dms_destst")["tons_2024"].sum().rename("in_kt")
+state = pd.concat([outbound, inbound], axis=1).fillna(0)      # line up Series side by side on the index
+```
+
+- Named aggregation (`new_col=("source_col", func)`) gives clean column names in one step.
+
+Docs: [groupby](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.groupby.html) · [DataFrameGroupBy.agg](https://pandas.pydata.org/docs/reference/api/pandas.api.typing.DataFrameGroupBy.agg.html) · [Group by guide](https://pandas.pydata.org/docs/user_guide/groupby.html) · [concat](https://pandas.pydata.org/docs/reference/api/pandas.concat.html)
+
+## Merge with validation
+
+```python
+rows_before = len(weather_wide)
+merged = pd.merge(
+    weather_wide, stations,
+    on="station_id",
+    how="left",
+    validate="many_to_one",   # raises if a station_id repeats in the lookup
+    indicator=True,           # adds _merge: both / left_only / right_only
+)
+print(merged["_merge"].value_counts())
+assert len(merged) == rows_before, "a duplicated key copied rows"
+
+# Chained 1:1 joins on different keys, then assert the expected row count
+state_table = (pop.merge(faf_state, on="fips", how="inner", validate="1:1")
+                  .merge(carrier_state, on="state", how="inner", validate="1:1"))
+assert len(state_table) == 51
+```
+
+Docs: [pandas.merge](https://pandas.pydata.org/docs/reference/api/pandas.merge.html) · [DataFrame.merge](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.merge.html) · [Merge, join, concatenate guide](https://pandas.pydata.org/docs/user_guide/merging.html)
+
+## Outliers: find, cap, flag
+
+```python
+display(df.nlargest(5, "power_units"))                    # look at the extremes first
+
+cap = fh["power_units"].quantile(0.999)                   # 99.9th percentile
+fh["power_units_capped"] = fh["power_units"].clip(upper=cap)
+print("rows capped:", (fh["power_units"] > cap).sum())
+
+# Ratio check: set impossible mileage per truck to NaN instead of dropping the carrier
+miles_per_unit = fh["mcs150_mileage"] / fh["power_units"].replace(0, np.nan)
+fh.loc[miles_per_unit > 300_000, "mcs150_mileage"] = np.nan
+
+# Tukey's fences (from the zyBook)
+q1, q3 = s.quantile([0.25, 0.75])
+iqr = q3 - q1
+outliers = s[(s < q1 - 1.5 * iqr) | (s > q3 + 1.5 * iqr)]
+```
+
+Docs: [nlargest](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.nlargest.html) · [Series.quantile](https://pandas.pydata.org/docs/reference/api/pandas.Series.quantile.html) · [Series.clip](https://pandas.pydata.org/docs/reference/api/pandas.Series.clip.html)
+
+## Bin a numeric column
+
+```python
+bins = [0, 1, 5, 10, 50, np.inf]
+labels = ["1 truck", "2-5", "6-10", "11-50", "51+"]
+fleet = pd.cut(fh["power_units"], bins=bins, labels=labels).value_counts(normalize=True).reindex(labels) * 100
+```
+
+Docs: [pandas.cut](https://pandas.pydata.org/docs/reference/api/pandas.cut.html)
+
+## Time series: resample, index to a base, staleness
+
+```python
+# Weekly -> monthly mean, then join to a monthly series on the date index
+diesel_m = diesel_raw.set_index("observation_date")["GASDESW"].resample("MS").mean()
+ppi_m = ppi_raw.set_index("observation_date")["PCU484121484121"]
+costs = pd.concat([diesel_m, ppi_m], axis=1, join="inner").loc["2018-01-01":].dropna()
+
+base = costs.loc["2020-01-01"]
+costs["diesel_idx"] = costs["GASDESW"] / base["GASDESW"] * 100      # Jan 2020 = 100
+
+# Cumulative daily totals -> weekly new counts
+weekly_new = daily_totals.resample("W-SUN").last().diff().dropna()
+
+# Records older than 24 months
+snapshot = pd.Timestamp("2026-11-18")
+stale = df["mcs150_date"] < snapshot - pd.DateOffset(months=24)
+```
+
+Docs: [resample](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.resample.html) · [Series.diff](https://pandas.pydata.org/docs/reference/api/pandas.Series.diff.html) · [DateOffset](https://pandas.pydata.org/docs/reference/api/pandas.tseries.offsets.DateOffset.html) · [Time series guide](https://pandas.pydata.org/docs/user_guide/timeseries.html)
+
+## Correlation and cross-tabs
+
+```python
+r = merged["carriers"].corr(merged["pop_2024"])        # Pearson r between two columns
+corr = weekly_new.corr()                               # matrix; use changes, not running totals
+pct = pd.crosstab(sample["Cluster"], sample["CREDDESC"], normalize="index") * 100   # row shares
+```
+
+Docs: [Series.corr](https://pandas.pydata.org/docs/reference/api/pandas.Series.corr.html) · [DataFrame.corr](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.corr.html) · [crosstab](https://pandas.pydata.org/docs/reference/api/pandas.crosstab.html)
+
+## Scaling, sampling, clustering, PCA (Module 5)
+
+```python
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.decomposition import PCA
+from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
+
+X = data[["Graduates", "Median_Debt", "Median_Earnings_1yr"]].copy()
+X["Graduates"] = np.log1p(X["Graduates"])                      # tame a right-skewed count
+scaled = pd.DataFrame(MinMaxScaler().fit_transform(X), columns=X.columns, index=X.index)
+sample = scaled.sample(n=1000, random_state=42)                # random, repeatable, covers the whole file
+
+Z = linkage(sample, method="ward")
+labels = fcluster(Z, t=4, criterion="maxclust")
+dendrogram(Z, truncate_mode="lastp", p=30)                     # 1,000 leaves are unreadable
+
+pca = PCA(n_components=2, random_state=42)
+points = pca.fit_transform(sample)
+print(pca.explained_variance_ratio_ * 100)                     # how much each axis explains
+```
+
+Docs: [numpy.log1p](https://numpy.org/doc/stable/reference/generated/numpy.log1p.html) · [DataFrame.sample](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.sample.html) · [MinMaxScaler](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html) · [PCA](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html) · [linkage](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html) · [fcluster](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.fcluster.html) · [dendrogram](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.dendrogram.html)
+
+## Matplotlib: a chart that states its claim
+
+```python
+BLUE, ORANGE, GRAY = "#0072B2", "#D55E00", "#B8B8B8"     # one scheme for every chart
+
+top = merged.nlargest(12, "out_kt").sort_values("out_kt")   # sort so the biggest bar is on top
+fig, ax = plt.subplots(figsize=(10, 6.5))
+bars = ax.barh(top["state_name"], top["out_kt"] / 1000, color=BLUE)
+for bar, n in zip(bars, top["carriers"]):                   # second measure as a direct label
+    ax.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height() / 2, f"{n:,} carriers", va="center", fontsize=9)
+
+ax.set_title("Five states ship 48% of U.S. vehicle freight by truck,\nbut carrier counts do not follow the freight",
+             loc="left", fontsize=13, fontweight="bold")    # title = the finding, left-aligned
+ax.set_xlabel("Vehicle and parts freight shipped by truck, 2024 (million tons)")
+ax.grid(axis="y", visible=False)                            # declutter
+fig.text(0.01, 0.005, "Source: BTS/FHWA FAF5.7.1; FMCSA Company Census File.", fontsize=8, color="#555555")
+plt.tight_layout(rect=(0, 0.03, 1, 1))                      # leave room for the source note
+plt.savefig("data/output/chart_a.png", dpi=150)
+```
+
+Other moves I reused:
+
+```python
+b = ax.bar(fleet.index, fleet.values, color=[BLUE] + [GRAY] * 4)   # highlight one bar, gray the rest
+ax.bar_label(b, labels=[f"{v:.0f}%" for v in fleet.values], padding=3)
+ax.yaxis.set_major_formatter(mtick.PercentFormatter())
+ax.axhline(100, color=GRAY, lw=1, ls="--")                          # reference line (base = 100, mean, etc.)
+ax.annotate(f"{last_val:.0f}", (last_date, last_val), xytext=(6, 0),
+            textcoords="offset points", color=BLUE, fontweight="bold")   # label the line end instead of a legend
+ax.scatter(x, y, s=sizes, color=GRAY, alpha=0.7)                    # context points in gray
+ax.scatter(xh, yh, s=sizes_h, color=ORANGE)                         # highlighted points in color
+```
+
+Docs: [pyplot.subplots](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html) · [Axes.barh](https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.barh.html) · [Axes.bar](https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.bar.html) · [Axes.bar_label](https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.bar_label.html) · [Axes.annotate](https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.annotate.html) · [Axes.axhline](https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.axhline.html) · [Axes.scatter](https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.scatter.html) · [Axes.set_title](https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_title.html) · [Figure.text](https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.text.html) · [ticker](https://matplotlib.org/stable/api/ticker_api.html) · [savefig](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html) · [tight_layout](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.tight_layout.html)
+
+## One theme for every chart (Module 6)
+
+```python
+PALETTE = sns.color_palette("colorblind", 10).as_hex()
+sns.set_theme(style="whitegrid", palette=PALETTE)
+plt.rcParams.update({
+    "axes.titleweight": "bold",
+    "axes.spines.top": False, "axes.spines.right": False,   # less ink
+    "savefig.dpi": 150, "savefig.bbox": "tight",
+})
+```
+
+Docs: [seaborn.set_theme](https://seaborn.pydata.org/generated/seaborn.set_theme.html) · [seaborn.color_palette](https://seaborn.pydata.org/generated/seaborn.color_palette.html) · [Choosing color palettes](https://seaborn.pydata.org/tutorial/color_palettes.html) · [Customizing Matplotlib (rcParams)](https://matplotlib.org/stable/users/explain/customizing.html)
+
+## seaborn: heatmap and colored scatter
+
+```python
+mask = np.triu(np.ones_like(corr, dtype=bool))               # hide the mirror half of a correlation matrix
+sns.heatmap(corr, mask=mask, annot=True, fmt=".2f", cmap="vlag", center=0, vmin=-1, vmax=1,
+            cbar_kws={"label": "Pearson correlation of weekly new deaths"}, ax=ax)
+
+sns.scatterplot(data=sample, x="Median_Debt", y="Median_Earnings_1yr", hue="Cluster", s=30, alpha=0.7, ax=ax)
+```
+
+- Use a diverging colormap centered on 0 for correlations. Use a sequential one (like `"YlGnBu"`) for values that only go up.
+
+Docs: [seaborn.heatmap](https://seaborn.pydata.org/generated/seaborn.heatmap.html) · [seaborn.scatterplot](https://seaborn.pydata.org/generated/seaborn.scatterplot.html)
+
+## Plotly: interactive and animated (Module 6)
+
+```python
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+# Animated bar race from long data
+race = px.bar(monthly, x="Total Deaths", y="Country", color="Country", orientation="h",
+              animation_frame="Month")
+
+# Time series with a dropdown and a range slider
+fig = go.Figure()
+for name in regions:
+    fig.add_trace(go.Scatter(x=weekly.index, y=weekly[name], mode="lines", name=name, visible=(name == "World")))
+fig.update_layout(
+    updatemenus=[dict(buttons=[dict(label=n, method="restyle",
+                                     args=[{"visible": [r == n for r in regions]}]) for n in regions])],
+    xaxis=dict(rangeslider=dict(visible=True)),
+    hovermode="x unified",
+)
+
+# Overview (small) above detail (large)
+fig2 = make_subplots(rows=2, cols=1, row_heights=[0.24, 0.76], vertical_spacing=0.1)
+
+fig.show()                                        # interactive in the notebook and its HTML export
+fig.write_image("output/drill_down.png")          # static PNG copy for a paper (needs kaleido)
+```
+
+Docs: [Plotly Express](https://plotly.com/python/plotly-express/) · [Animations](https://plotly.com/python/animations/) · [Dropdown menus](https://plotly.com/python/dropdowns/) · [Range slider](https://plotly.com/python/range-slider/) · [Subplots](https://plotly.com/python/subplots/) · [Templates](https://plotly.com/python/templates/) · [Static image export](https://plotly.com/python/static-image-export/)
+
+## Matplotlib animation
+
+```python
+from matplotlib.animation import FuncAnimation
+from IPython.display import HTML
+
+anim = FuncAnimation(fig, update, frames=n_frames, init_func=init, interval=200, blit=True, repeat=False)
+HTML(anim.to_jshtml())    # plays inside the notebook and the exported HTML
+```
+
+Docs: [FuncAnimation](https://matplotlib.org/stable/api/_as_gen/matplotlib.animation.FuncAnimation.html)
+
+## Save and confirm
+
+```python
+out = Path("data/output/merged_state.csv")
+out.parent.mkdir(parents=True, exist_ok=True)
+df.to_csv(out, index=False, date_format="%Y-%m-%d")
+check = pd.read_csv(out)
+assert check.shape == df.shape     # what's on disk matches what's in memory
+```
+
+Docs: [to_csv](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_csv.html)
+
+## Final validation block
+
+```python
+assert df["station_id"].notna().all()
+assert df["latitude"].between(40, 42).all()
+assert not df.duplicated(subset=["station_id", "date"]).any()
+assert (df.groupby("station_id")[["latitude", "longitude"]].nunique() == 1).all().all()   # one location per station
+print("All validation checks passed.")
+```
+
+## Key takeaways
+
+- Load as text when IDs matter, then convert on purpose with `errors="coerce"`.
+- Check keys before merging, use `validate=` and `indicator=True` during, and assert row counts after.
+- Cap outliers with `quantile` plus `clip`, and say how many rows you capped.
+- Titles say the finding. Color highlights one thing. Gray is for context.
+- Finish every notebook with asserts so a silent problem stops the run.

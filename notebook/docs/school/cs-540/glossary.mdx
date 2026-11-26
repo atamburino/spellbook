@@ -1,0 +1,266 @@
+---
+title: "CS-540 glossary: data literacy and visualization terms"
+sidebar_label: Glossary
+sidebar_position: 1
+tags: [cs-540, glossary, data-literacy, data-visualization, statistics]
+date: 2026-11-26
+custom_edit_url: null
+---
+
+# CS-540 glossary: data literacy and visualization terms
+
+> **Source:** CS-540 zyBook chapters 1 to 8, the weekly notebooks, and Knaflic (2015) for the storytelling terms.
+>
+> **Saved via:** End-of-course notes.
+
+## The idea
+
+Every term I used in the course, A to Z, in plain words, with the example from my coursework where it came up.
+
+## 0-9
+
+**3-minute story.** If you had only three minutes to tell the audience what they need to know, what would you say? A check that you can state the story without the slides.
+
+## A
+
+**Aggregate row.** A row that is already a total of other rows (World, a continent, "By Total"). Summing it with the detail rows double counts. Example: the COVID deaths file had 12 region and income-group columns next to 234 countries.
+
+**Aggregation.** Collapsing many rows into one summary value per group, such as a sum, mean, median, or count. In pandas: `groupby(...).agg(...)`.
+
+**Annotation.** Text placed on the chart itself (a value, a label, a short note) so the reader doesn't have to cross-reference a legend or axis.
+
+**Audience.** Who the chart or story is for. It sets the level of detail, the vocabulary, and the call to action. Executives want the headline and the decision. Technical readers want method and caveats.
+
+## B
+
+**Bar chart.** Compares a measure across categories. Horizontal bars work well for long category names and ranked lists. Always start the value axis at zero.
+
+**Big Idea.** The whole story in one sentence. Knaflic borrows it from Nancy Duarte: it states your point of view, says what's at stake, and is a complete sentence.
+
+**Blending (data blending).** Combining two or more data sets into one table for analysis, usually with a join on a shared key, sometimes after reshaping or aggregating each side first.
+
+**Box plot.** Shows a distribution: median, quartiles (the box), whiskers, and outliers. Good for comparing spreads across groups or years.
+
+**Bubble chart.** A scatter plot where dot size encodes a third variable. Used in 9-1 for share of one-truck carriers.
+
+## C
+
+**Capping (winsorizing).** Setting values above a chosen percentile to that percentile, so one bad value can't dominate a total. In 9-1, fleet sizes above the 99.9th percentile (830 power units) were set to 830. The largest raw value was 858,001.
+
+**Cardinality.** How many distinct values a column has. High cardinality: IDs and emails. Low: state codes, gender. A primary key needs high cardinality and no nulls.
+
+**Categorical data.** Values that are labels, not quantities (membership tier, product type, state). Store them as pandas `category` when there are few distinct values.
+
+**Causation.** One thing actually producing another. Data can show that two things move together. Showing that one causes the other needs a design that rules out other explanations.
+
+**Choropleth.** A map where regions are shaded by a value. Normalize first (per capita, per area) or big regions win by default.
+
+**Cleaning (data cleaning).** Fixing or flagging problems so the data is fit for use: whitespace, case, junk tokens, wrong types, impossible values, duplicates, and missing values.
+
+**Clutter.** Anything on a chart that takes up space without adding understanding: heavy gridlines, borders, redundant labels, decoration. Remove it.
+
+**Clustering.** Grouping records so that items in a group are more alike than items in other groups. Module 5 used hierarchical clustering with Ward's method.
+
+**Cognitive load.** The mental effort a reader spends to understand a chart. Clutter raises it. Direct labels and clear titles lower it.
+
+**Colorblind-safe palette.** A palette people with color vision deficiency can still tell apart, such as Okabe-Ito or seaborn's `"colorblind"` palette. Avoid red against green.
+
+**Completeness.** A data quality dimension: are the values that the use case needs actually filled in?
+
+**Consistency.** A data quality dimension: the same thing has the same value and format everywhere it appears.
+
+**Correlation (Pearson r).** A number from -1 to 1 for how closely two numeric variables move together in a straight line. In 9-1, carriers vs. population was r = 0.84 and carriers vs. freight r = 0.57.
+
+**Correlation vs. causation.** Correlation says two things move together. It doesn't say why. A third factor (like population) can drive both.
+
+**Cumulative series.** A running total. Two cumulative series both trend upward, so they look highly correlated even when their week-to-week movement is unrelated. Correlate the differences instead.
+
+**Currency / timeliness.** A data quality dimension: is the data recent enough for the decision? In 9-1, 14% of the filtered carriers had an MCS-150 filing older than 24 months.
+
+## D
+
+**Data literacy.** The ability to read, judge, work with, and communicate with data, including knowing what a data set can and can't tell you.
+
+**Data profiling.** Systematically describing a data set: shape, types, null rates, distinct counts, ranges, and distributions, before trusting it.
+
+**Data quality.** Data is high quality when it is fit for its intended use in operations, compliance, and decision making. The zyBook covers 12 dimensions based on DAMA's work, including completeness, consistency, conformity (validity), uniqueness, integrity, accessibility, security, and currency/timeliness.
+
+**Data story / data-driven narrative.** Findings arranged as a story with a beginning (context), middle (tension or the insight), and end (what to do), aimed at a specific audience.
+
+**Data type (dtype).** How a column is stored: `int64`, `float64`, `object`/`string`, `category`, `datetime64`, `bool`. Wrong dtypes break math and sorting quietly.
+
+**Declutter.** See Clutter.
+
+**Dendrogram.** A tree diagram showing the order in which hierarchical clustering merged records. Cutting it at a height gives a number of clusters.
+
+**Descriptive statistics.** Count, mean, standard deviation, min, quartiles, max. `df.describe()`.
+
+**Diverging palette.** Two hues that meet at a neutral midpoint. Use it for data with a meaningful center, like correlations around zero.
+
+**Drill-down.** An interactive pattern where the reader starts at a summary and clicks or selects to see a lower level (global to continent to country).
+
+**Duplicate.** An exact repeated row, or a repeated key (same station and same date). Check both.
+
+## E
+
+**EDA (exploratory data analysis).** Looking at data without a fixed hypothesis to learn its shape, gaps, outliers, and relationships.
+
+**Explanatory analysis.** Communicating a known finding to an audience so they understand it and act. Fewer, designed charts.
+
+**Exploratory analysis.** Analysis for yourself. Many rough charts, most thrown away. Knaflic's image: open a hundred oysters to find a couple of pearls, then show the pearls.
+
+## F
+
+**Fill (imputation).** Replacing missing values with something (0, "Unknown", a mean). Only fill when you can defend it. "Not measured" is not 0.
+
+**FIPS code.** A numeric code for U.S. states and counties. FAF and Census use it, FMCSA uses postal codes, so 9-1 needed a FIPS to postal code map.
+
+## G
+
+**Gestalt principles.** Rules for how people group what they see (things that are close together, look alike, or are enclosed or connected read as a group). Knaflic uses them to decide what clutter to cut and how to make related things look related.
+
+**Grain.** What one row represents (one carrier, one station per day, one state). Know the grain of each table before you join or sum.
+
+**Groupby.** Split rows into groups by a key, apply a function, combine the results.
+
+## H
+
+**Heatmap.** A grid of colored cells for a matrix of values, such as a correlation matrix or cluster means.
+
+**Hierarchical data / multi-level modeling.** Data with levels (world, continent, country) or (nation, state). Show the overview first, then let the reader go down a level.
+
+**Histogram.** Bars showing how many values fall in each range. Shows the shape of one numeric variable.
+
+**Horizontal logic.** Knaflic's check that reading only the slide or chart titles in order tells the whole story.
+
+## I
+
+**Index (indexed series).** Rescaling a series so a base period equals 100. Lets two series in different units share one axis. In 9-1, diesel and the truckload PPI were both set to January 2020 = 100.
+
+**Inner join.** Keeps only keys found in both tables.
+
+**Integrity.** A data quality dimension: values are correct and relationships between tables hold.
+
+**Interactivity.** Hover tooltips, dropdowns, sliders, zoom. Good for exploration and for readers who want detail on demand.
+
+## J
+
+**Join / merge.** Combining tables on a shared key. Types: inner, left, right, outer (full). In pandas: `pd.merge` or `df.merge`.
+
+## K
+
+**Key (join key).** The column(s) that identify the match between tables. Must be the same type and format on both sides.
+
+## L
+
+**Left join.** Keeps every row from the left table and attaches matches from the right. Unmatched right-side columns are null.
+
+**Line chart.** Shows change over continuous time. Don't use it for unordered categories.
+
+**Log scale.** An axis where each step is a multiple (1, 10, 100). Use it when values span orders of magnitude and relative change matters.
+
+**Long (tidy) format.** One row per observation per variable (station, date, reading type, value). Wide format has one column per variable.
+
+## M
+
+**Many-to-one.** A join where many left rows match one right row (many daily readings to one station). Validate it so a duplicated right key can't copy rows.
+
+**Melt.** Reshape wide to long. The opposite of pivot.
+
+**Min-max scaling (normalization).** Rescales a column to 0 to 1: (x - min) / (max - min). Makes features comparable for clustering, but every column then tops out at 1, so you lose rank.
+
+**Missing values (NaN, NA, null).** Absent data. Find out why it's missing before deciding what to do: entry error, not measured, or suppressed on purpose.
+
+## N
+
+**Normalization (rates).** Dividing by a size measure so groups compare fairly: per resident, per trip, per 1,000 tons.
+
+## O
+
+**Outer (full) join.** Keeps all keys from both tables.
+
+**Outlier.** A value far from the rest. Could be a real extreme or an error (the 858,001-truck carrier). Common checks: Tukey's fences (1.5 times the IQR beyond the quartiles) and z-scores. Decide: drop, cap, flag, or keep, and say which.
+
+**Overview and detail.** Show the big picture and a zoomed or filtered view together, or let the reader move from one to the other.
+
+## P
+
+**PCA (principal component analysis).** Projects many numeric features onto a few combined axes that keep the most variance. Used in Module 5 to plot clusters in 2D.
+
+**Percentile / quantile.** The value below which a given share of the data falls. The 99.9th percentile has 99.9% of values at or below it.
+
+**Pie chart.** Parts of a whole. Hard to compare slices by eye. A sorted bar chart is usually clearer.
+
+**Pivot.** Reshape long to wide: one row per index, one column per category. Fails on duplicate keys, which is a useful check.
+
+**Power unit.** FMCSA's count of vehicles with an engine that haul: trucks plus tractors. Trailers are not power units.
+
+**Preattentive attributes.** Visual properties the eye picks up before conscious thought: color, size, position, bold, enclosure. Use one to point at the thing that matters.
+
+**Privacy suppression.** Withholding small counts so people can't be identified (NCHS suppresses 1 to 9; College Scorecard writes "PS"). The gaps are deliberate and not random.
+
+**Provisional data.** Preliminary numbers that may change as more records come in.
+
+## R
+
+**Range slider.** An interactive control under a time-series chart for zooming into a date range.
+
+**Resample.** Change the frequency of a time series (weekly to monthly) with an aggregation, like the mean.
+
+**Right join.** Keeps every row from the right table.
+
+**Root cause analysis (RCA).** Tracing a data quality problem back to where it started (entry, system, process) instead of patching the symptom.
+
+## S
+
+**Scatter plot.** Two numeric variables as x and y. Shows relationships, clusters, and outliers.
+
+**Self-reported data.** Data entered by the subject (carriers fill out their own MCS-150). Expect stale and inconsistent entries.
+
+**Snake_case.** Lowercase column names with underscores (`station_id`). Makes columns easy to type and consistent across tables.
+
+**Spaghetti graph.** A line chart with so many lines that none can be read. Fix it by highlighting one or two and graying the rest, or by splitting into small multiples.
+
+**Storyboarding.** Sketching the story's sequence (on sticky notes or paper) before building any slides or charts.
+
+**Story spine.** Kenn Adams's improv outline: once upon a time, every day, but one day, because of that, because of that, until finally, and ever since then. It's often called the Pixar story spine. Handy for ordering a data story.
+
+**Straight truck.** A truck where the cab and cargo area share one frame. Counted with tractors as power units.
+
+## T
+
+**Time series.** Values recorded over time at a regular interval.
+
+**Title that states the claim (takeaway title).** A chart title that says the finding ("Five states ship 48% of U.S. vehicle freight by truck") instead of naming the axes.
+
+**Tractor (truck-tractor).** The cab that pulls a separate trailer on a fifth wheel and carries no cargo itself.
+
+## U
+
+**Uniqueness.** A data quality dimension: no duplicate records for one real thing. Check with `duplicated()` and `is_unique`.
+
+## V
+
+**Validation.** Checking the result meets expectations: column names, dtypes, null counts, value ranges, unique keys, and row counts before and after each step. Use `assert` so a failure stops the notebook.
+
+**Validity (conformity).** A data quality dimension: values follow the expected format, type, and range.
+
+**Visual hierarchy.** Arranging size, weight, color, and position so the reader sees the most important thing first.
+
+## W
+
+**Ward's method.** A hierarchical clustering rule that merges the pair of clusters that adds the least within-cluster variance.
+
+**Who, what, how.** Knaflic's context questions: who is the audience, what do you need them to know or do, and how will the data help make the point.
+
+**Wide format.** One row per entity, one column per variable or period.
+
+## Z
+
+**Z-score.** How many standard deviations a value is from the mean. A large absolute z-score marks a possible outlier.
+
+## Key takeaways
+
+- Most of these terms are ways to answer one question: is this data fit for the decision?
+- Know the grain of each table before joining or summing.
+- Pick the chart for the data type and the audience, then remove everything that doesn't support the claim.
